@@ -1,5 +1,7 @@
-# BachelorprojectSoundprocessor
+﻿# BachelorprojectSoundprocessor
 A 8bit Sound Keyboard
+
+TESTTEST
 
 SS 2017 - Bachelorprojekt - Bachelor Project of Electrical Engineering   
 by Thorben Kay, Tim Staats, Jonas Radtke, Sven Ehlers, Hans-Nikolaus Kreutzfeldt
