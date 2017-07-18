@@ -7,9 +7,7 @@
 
 #include "oszillatoren.h"
 
-volatile oszillator oszillatoren[8];
-volatile chan chanel[8];
-union dds_cnt_t dds_counter[8] = {0};
+volatile chan channel[8];
 
 volatile uint16_t noise_cnt = 0;
 volatile uint16_t noise_divider = 0;
@@ -74,66 +72,10 @@ void timerInit (void){
 void TC0_Handler()
 {
 	static uint32_t test;
-	if (oszillatoren[0].ein >= 1) // Falls der Oszillator eingeschaltet ist wird das Signal generiert
-	{
-		switch(oszillatoren[0].waveform) {
-			//rectangle
-			// Hier wird das Rechtecktsignal erzeugt. Es wird mit Zählwert 0 High gesetzt und mit dem rect_low signal auf Low gesetzt
-			// Rect_low wurde in der Main berechnet, je nach Duty Cycle
-			// Der Endwert bestimmt die Frequenz. Der Zählwert wird auf 0 gesetzt.
-			case 1:
-			if (chanel[0].rect_count <= chanel[0].rect_low) // Wenn Dutycycle noch nicht erreicht Rechteck High!
-			{
-				chanel[0].chan_out = 128;
-			}
-			else
-			{
-				chanel[0].chan_out = 0;
-			}
-			
-			chanel[0].rect_count++; // Zaehlwert erhoehen
-			
-			if (chanel[0].rect_count >= chanel[0].rect_end) // Am Ende wieder zuücksetzen
-			{
-				chanel[0].rect_count = 0;
-			}
-			ausgang = chanel[0].chan_out;
-			break;
-			
-			//triangle
-			// hier wird der Wert aus der Tabelle ausgegeben. Es wird der Index aus dem obersten Byte des Phasenakkumulators verwendet.
-			case 2:
-			if (dds_counter[0].phase > 15)
-			{
-				dds_counter[0].phase = 0;
-			}
-
-			chanel[0].chan_out = dreiecktabelle[dds_counter[0].phase];
-			ausgang = chanel[0].chan_out;
-			break;
-			
-			//noise
-			case 3:
-			if ((noise_lfsr & 0x01) == 1)
-			{
-				ausgang = 255;
-			}
-			else
-			{
-				ausgang = 0;
-			}
-			break;
-			
-			default:
-			break;
-		}
-	}
-	else //Falls der Oszillator nicht belegt ist wird der Ausgangswert gelöscht.
-	{
-		chanel[0].chan_out = 0;
-	}
 	
-	dac_out = chanel[0].chan_out;
+	oscillator(&channel[0]);
+	
+	dac_out = channel[0].chan_out;
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
@@ -146,7 +88,7 @@ void TC1_Handler()
 	
 	
 		
-	dds_counter[0].counter = dds_counter[0].counter + chanel[0].tri_stepsize;
+	channel[0].dds_counter.counter = channel[0].dds_counter.counter + channel[0].tri_stepsize;
 	
 	
 	// Ausgabe an DAC
@@ -187,4 +129,65 @@ void TC2_Handler()
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[2].TC_SR;
+}
+
+void oscillator(chan *x){
+
+	if (x->oscillator_on >= 1) // Falls der Oszillator eingeschaltet ist wird das Signal generiert
+	{
+		switch(x->waveform) {
+			//rectangle
+			// Hier wird das Rechtecktsignal erzeugt. Es wird mit Zählwert 0 High gesetzt und mit dem rect_low signal auf Low gesetzt
+			// Rect_low wurde in der Main berechnet, je nach Duty Cycle
+			// Der Endwert bestimmt die Frequenz. Der Zählwert wird auf 0 gesetzt.
+			case 1:
+				if (x->rect_count <= x->rect_low) // Wenn Dutycycle noch nicht erreicht Rechteck High!
+				{
+					x->chan_out = 128;
+				}
+				else
+				{
+					x->chan_out = 0;
+				}
+		
+				x->rect_count++; // Zaehlwert erhoehen
+		
+				if (x->rect_count >= x->rect_end) // Am Ende wieder zuücksetzen
+				{
+					x->rect_count = 0;
+				}
+			break;
+		
+			//triangle
+			// hier wird der Wert aus der Tabelle ausgegeben. Es wird der Index aus dem obersten Byte des Phasenakkumulators verwendet.
+			case 2:
+				if (x->dds_counter.phase > 15)
+				{
+					x->dds_counter.phase = 0;
+				}
+
+				x->chan_out = dreiecktabelle[x->dds_counter.phase];
+			break;
+		
+			//noise
+			case 3:
+				if ((noise_lfsr & 0x01) == 1)
+				{
+					ausgang = 255;
+				}
+				else
+				{
+					ausgang = 0;
+				}
+			break;
+		
+			default:
+			break;
+		}
+	}
+	else //Falls der Oszillator nicht belegt ist wird der Ausgangswert gelöscht.
+	{
+		x->chan_out = 0;
+	}
+
 }

@@ -10,8 +10,7 @@
 
 
 // Externe Globale Variablen
-extern volatile oszillator oszillatoren[8];
-extern volatile chan chanel[8];
+extern volatile chan channel[8];
 extern union dds_cnt_t dds_counter[8];
 
 extern volatile uint16_t noten;
@@ -63,9 +62,11 @@ int main (void)
 	//delay_ms(1000);
 	dac_out = 0;
 	
-	oszillatoren[0].ein = 1;
-	oszillatoren[0].waveform = 1;
-	oszillatoren[0].frequenz = 880;
+	// ZUM OSZILLATOR TESTEN!
+	channel[0].oscillator_on = 1;
+	channel[0].waveform = TRIANGLE; // RECTANGLE/TRIANGLE / NOISE
+	channel[0].frequency = 880;
+	//
 	while(1)
 	{
 		
@@ -86,9 +87,9 @@ int main (void)
 		// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
 		// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet. 
 		// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
-		chanel[0].rect_end = SAMPLEFREQ / oszillatoren[0].frequenz;
-		chanel[0].rect_low = chanel[0].rect_end / 2 ;
-		chanel[0].tri_stepsize = (BIT24*oszillatoren[0].frequenz*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
+		channel[0].rect_end = SAMPLEFREQ / channel[0].frequency;
+		channel[0].rect_low = channel[0].rect_end / 2 ;
+		channel[0].tri_stepsize = (BIT24*channel[0].frequency*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
 	}
 }
 
