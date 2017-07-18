@@ -81,7 +81,8 @@ int main (void)
 	sprintf(text,   " Tasten 1: \n");
 	uartsendstring(text);
 	
-	delaytemp = ticks;
+	delaytemp = ticks+1;
+	
 	
 	while (!((ticks) >= delaytemp+1000));
 
