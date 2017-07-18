@@ -67,6 +67,9 @@ int main (void)
 	channel[0].waveform = TRIANGLE; // RECTANGLE/TRIANGLE / NOISE
 	channel[0].frequency = 880;
 	//
+	
+	uint8_t settings = 0;	//Einstellen der Modi auf Standardwerte
+	
 	while(1)
 	{
 		
