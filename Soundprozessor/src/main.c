@@ -23,7 +23,14 @@ extern uint8_t tasten[2];
 volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
 uint32_t wt = 0;
 
-
+struct Settings
+{
+	uint8_t waveform;
+	uint8_t burst;
+	uint8_t arpeggio;
+	uint8_t halleffekt;
+	uint8_t anhaltenderton;	
+};
 
 int main (void)
 {

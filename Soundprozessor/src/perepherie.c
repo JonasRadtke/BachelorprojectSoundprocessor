@@ -1,9 +1,10 @@
 #include "perepherie.h"
 
 
-uint8_t readsettings(uint8_t settings)
+Settings readsettings(Settings settings)
 {
 	uint8_t input = 0;
+	Settings newSettings;
 	
 	twi_package_t input_I2C =	{
 		.addr			= 0x0,		//!!!Adresse muss noch angepasst werden!!!!
@@ -17,23 +18,24 @@ uint8_t readsettings(uint8_t settings)
 	//Kompatibilitaet der Modi sichern
 	
 	
+	newSettings = {.anhaltenderton= input & 0x1,.arpeggio=input & 0x2,.burst=input & 0x4,.halleffekt=input & 0x8}
 	
 	//
 	
 	return settings;
 }
 
-void  writeLed(uint8_t* settings)
+void  writeLed(Settings settings)
 {
+	uint8_t output = settings.anhaltenderton + settings.arpeggio + settings.burst + settings.halleffekt;
+	
 	twi_package_t writeled =	{
 		.addr			= 0x0,		//!!!Adresse muss noch angepasst werden!!!!
 		.addr_length	= 0,
 		.chip			= 0x38,
-		.buffer			= settings,
+		.buffer			= &output,
 		.length			= 1			 };
 	
-	
-
 	while(twi_master_write(TWI2, &writeled) != TWI_SUCCESS);
 	
 	return;
