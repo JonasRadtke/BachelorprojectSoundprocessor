@@ -23,15 +23,6 @@ extern uint8_t tasten[2];
 volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
 uint32_t wt = 0;
 
-struct Settings
-{
-	uint8_t waveform;
-	uint8_t burst;
-	uint8_t arpeggio;
-	uint8_t halleffekt;
-	uint8_t anhaltenderton;	
-};
-
 int main (void)
 {
 	
@@ -75,7 +66,7 @@ int main (void)
 	channel[0].frequency = 880;
 	//
 	
-	uint8_t settings = 0;	//Einstellen der Modi auf Standardwerte
+	Settings settings ={.anhaltenderton=0,.arpeggio=0,.burst=0,.halleffekt=0,.waveform=0}; //Standardmodi einstellen
 	
 	while(1)
 	{
