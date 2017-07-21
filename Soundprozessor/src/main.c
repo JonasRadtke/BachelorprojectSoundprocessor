@@ -27,13 +27,14 @@ uint32_t wt = 0;
 
 int main (void)
 {
-	
+	pmc_switch_sclk_to_32kxtal(PMC_OSC_XTAL);   // enable external 32.768kHz crystal
+	while (!pmc_osc_is_ready_32kxtal());        // wait until oscillator is ready
 	sysclk_init();		// 48 Mhz einstellen
 	wdt_disable(WDT);	// Watchdog ausschalten
 	SystemCoreClockUpdate();	// Systemclock akualisieren
 	fpu_enable ();	// Floatingpoint Unit aktivieren, Achtung richtige Optimierung einstellen!
 	delay_init(SystemCoreClock);	
-	SystemCoreClock = 44300000;
+	//SystemCoreClock = 44300000;
 	SysTick_Config(SystemCoreClock / 1000);      /* Configure SysTick to generate an interrupt every millisecond */
 
 	pmc_enable_periph_clk(ID_PIOA);	
@@ -64,7 +65,7 @@ int main (void)
 	
 	// ZUM OSZILLATOR TESTEN!
 	channel[0].oscillator_on = 1;
-	channel[0].waveform = TRIANGLE; // RECTANGLE/TRIANGLE / NOISE
+	channel[0].waveform = RECTANGLE; // RECTANGLE/TRIANGLE / NOISE
 	channel[0].frequency = 880;
 	//
 	
