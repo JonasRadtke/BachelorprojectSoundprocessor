@@ -9,13 +9,15 @@ struct Settings
 	uint8_t waveform;
 	uint8_t burst;
 	uint8_t arpeggio;
-	uint8_t halleffekt;
-	uint8_t anhaltenderton;
+	uint8_t Release;
+	uint8_t Sustain;
 };
 
-uint8_t readsettings(Settings);
+void readkeys(uint8_t*,twi_package_t);
+Settings readSettings(Settings);
 void writeLed(Settings*);
-uint8_t getVolumeValue();
-uint8_t getAnhaltenderTonValue();
+
+uint8_t getReleaseValue();
+uint8_t getSustainTonValue();
 uint8_t getArpeggioValue();
 uint8_t getDutyCycleVaule();
