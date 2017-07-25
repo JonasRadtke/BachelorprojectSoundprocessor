@@ -1,9 +1,9 @@
 #include "perepherie.h"
 
 
-void readkeys(uint8_t* keys,twi_package_t multiplex_I2C)
+void readkeys(uint8_t* keys,uint8_t* newkeys,twi_package_t multiplex_I2C)
 {
-	uint8_t i=0,j,keynumber,notkeynumbermax=1,input;
+	uint8_t i=0,j,k,keynumber=0,newkeynumber=0, oldkeynumber=0,notkeynumbermax=1,notoldkey,input, oldkeys[8];
 	
 	twi_package_t input_I2C =	{
 		.addr			= 0x0,		//!!!Adresse muss noch angepasst werden!!!!
@@ -19,12 +19,31 @@ void readkeys(uint8_t* keys,twi_package_t multiplex_I2C)
 		while(twi_master_read(TWI2, &input_I2C)  != TWI_SUCCESS );
 		
 		j=0;
-		while(j<8 && notkeynumbermax)		//
+		while(j<8 && notkeynumbermax)		//	
 		{
 			if(input & (0x1 << j))
 			{
-				keys[keynumber]=(i+1)*(j+1);
-				keynumber++;
+				notoldkey=1;
+				k=0;
+				
+				while(k<8 || !notoldkey)
+				{
+					if(keys[k]==(i+1)*(j+1))
+					{
+						oldkeys[oldkeynumber]=keys[k];
+						notoldkey=0;
+						oldkeynumber++;
+					}
+					k++;
+				}
+				
+				if(notoldkey)
+				{
+					newkeys[newkeynumber]=(i+1)*(j+1);
+					newkeynumber++;
+				}
+				
+				keynumber=oldkeynumber+newkeynumber;
 				
 				if(keynumber>7)
 				{

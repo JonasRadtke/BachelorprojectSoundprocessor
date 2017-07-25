@@ -13,7 +13,7 @@ struct Settings
 	uint8_t Sustain;
 };
 
-void readkeys(uint8_t*,twi_package_t);
+void readkeys(uint8_t*,uint8_t*,twi_package_t);
 Settings readSettings(Settings);
 void writeLed(Settings*);
 

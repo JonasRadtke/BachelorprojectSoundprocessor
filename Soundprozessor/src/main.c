@@ -73,6 +73,7 @@ int main (void)
 		.buffer			= &multiplex,
 	.length			= 1			 };
 	
+	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
 	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0}; //Standardmodi einstellen
 	
