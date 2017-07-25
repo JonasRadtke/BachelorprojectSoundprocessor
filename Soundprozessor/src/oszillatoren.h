@@ -52,10 +52,11 @@ typedef struct chan1 {
 	uint8_t pushed_key;		// Number of pushed Key in this Oscillator
 	float frequency;		// Frequency of Note
 	
-	// Evelope
-	uint32_t sustainCnt;	
-	uint32_t sustainVol;
-	uint32_t releaseCnt;
+	// Envelope
+	uint8_t envelopeVolume;	// Actual Volume
+	uint32_t sustainCnt;	// Counter for Sustain
+	uint32_t sustainVol;	// Sustain Volume (constant)
+	uint32_t releaseCnt;	// Counter for Release
 	uint32_t releaseTime;
 	
 	// Waveforms
@@ -106,5 +107,6 @@ void noise(chan *);
 void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]);
 uint8_t _searchFreeChannel(chan x[], uint8_t key);
 void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
+void envelopChannel(uint8_t key[] ,chan x[]);
 
 #endif /* OSZILLATOREN_H_ */

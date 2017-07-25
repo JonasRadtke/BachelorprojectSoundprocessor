@@ -7,7 +7,7 @@
 
 #include "portexpander.h"
 
-volatile uint8_t tasten[2];
+uint8_t tasten[2];
 
 void twiInit(){
 	// I2C aktivieren

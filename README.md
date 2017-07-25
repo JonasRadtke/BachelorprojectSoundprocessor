@@ -1,24 +1,23 @@
 ﻿# BachelorprojectSoundprocessor
 A 8bit Sound Keyboard
 
-TESTTEST
-
 SS 2017 - Bachelorprojekt - Bachelor Project of Electrical Engineering   
 by Thorben Kay, Tim Staats, Jonas Radtke, Sven Ehlers, Hans-Nikolaus Kreutzfeldt
 
-## Projekt Gruppen
-### Eingabe
-* Erkennung Tasten
-  * Multiplexen der Tasten
-* Taster und Led zur Modiwahl
-* Potis
+## Overview
+### Input
+* Keyboard with 49 Keys (old Keyboard is used)
+	* Complete new Circuit Board
+	* Multiplexing Keys
+* Switches and Led for Modes
 
-### Ausgabe
-* Verstärkerschaltung
-  * Vorverstärkung mittels Rail2Rail OPAMP
+### Output
+* 8 bit DAC
+* TDA Amp for Speaker
   
 ### µC
-* Atmel SAMG
+* Atmel SAM G53N19
 * UART 2 USB for Debugging
+
 
   

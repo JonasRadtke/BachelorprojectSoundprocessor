@@ -7,11 +7,11 @@
 
 #include "oszillatoren.h"
 
-volatile chan channel[8];
+chan channel[8];
 
 
 
-volatile float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7080,	  38.8908,	  41.2034,	  43.6535,	  46.2493,	  48.9994, 
+float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7080,	  38.8908,	  41.2034,	  43.6535,	  46.2493,	  48.9994, 
 							  51.9130,	  55	 ,    58.2704,	  61.7354,	  65.4063,	  69.2956,	  73.4161,    77.7817,	  82.4068,	  87.3070,	  92.4986,    
 							  97.9988,    103.8261,  110	 ,   116.5409,	 123.4708,	 130.8127,	 138.5913,	 146.8323,	 155.5634,	 164.8137,	 174.6141,	 
 							 184.9972,    195.9977,	 207.6523,	 220	 ,   233.0818,	 246.9416,	 261.6255,	 277.1826,	 293.6647,	 311.1269,	 329.6275,	  
@@ -19,8 +19,8 @@ volatile float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.647
 							 659.2551,	 698.4564,	 739.9888,	 783.9908,	 830.6093,	 880	 ,   932.3275,	 987.7666,	1046.5022,	1108.7305,	1174.6590,	 
 							 1244.5079,	1318.5102,	1396.9129,  1479.9776,	1567.9817,	1661.2187,	1760	 ,  1864.6550,	1975.5332,	2093.0045,	2217.4610,	 
 							 2349.3181,	2489.0158,	2637.0204,	2793.8258,	2959.9553,	3135.9634,	3322.4375,	3520	 ,  3729.3100,	3951.0664,	4186.0090}; 
-volatile uint8_t triangletab[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32}; // Triangle tab
-volatile uint16_t divider[16] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
+uint8_t triangletab[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32}; // Triangle tab
+uint16_t divider[16] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
 
 
 
@@ -77,18 +77,19 @@ void TC0_Handler()
 	static uint32_t test;
 	
 	oscillator(&channel[0]); // Oscillator Channel
-	//oscillator(&channel[1]); // Oscillator Channel
-	//oscillator(&channel[2]); // Oscillator Channel
-	//oscillator(&channel[3]); // Oscillator Channel
-	//oscillator(&channel[4]); // Oscillator Channel
-	//oscillator(&channel[5]); // Oscillator Channel
-	//oscillator(&channel[6]); // Oscillator Channel
-	//oscillator(&channel[7]); // Oscillator Channel
+	oscillator(&channel[1]); // Oscillator Channel
+	oscillator(&channel[2]); // Oscillator Channel
+	oscillator(&channel[3]); // Oscillator Channel
+	oscillator(&channel[4]); // Oscillator Channel
+	oscillator(&channel[5]); // Oscillator Channel
+	oscillator(&channel[6]); // Oscillator Channel
+	oscillator(&channel[7]); // Oscillator Channel
 	
-	dac_out = channel[0].chan_out; // Accumulate Oscillator
+	dac_out = channel[0].chan_out/2 + channel[1].chan_out/2; // Accumulate Oscillator
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
+	if (test){}
 }
 
 void TC1_Handler()
@@ -122,6 +123,7 @@ void TC1_Handler()
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[1].TC_SR; 
+	if (test){}
 }
 
 void TC2_Handler()
@@ -141,6 +143,7 @@ void TC2_Handler()
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[2].TC_SR;
+	if (test){}
 }
 
 void oscillator(chan *x){
@@ -152,7 +155,7 @@ void oscillator(chan *x){
 			// Hier wird das Rechtecktsignal erzeugt. Es wird mit Zählwert 0 High gesetzt und mit dem rect_low signal auf Low gesetzt
 			// Rect_low wurde in der Main berechnet, je nach Duty Cycle
 			// Der Endwert bestimmt die Frequenz. Der Zählwert wird auf 0 gesetzt.
-			case 1:
+			case RECTANGLE:
 				if (x->rect_count <= x->rect_low) // Wenn Dutycycle noch nicht erreicht Rechteck High!
 				{
 					x->chan_out = 128;
@@ -172,7 +175,7 @@ void oscillator(chan *x){
 		
 			//triangle
 			// hier wird der Wert aus der Tabelle ausgegeben. Es wird der Index aus dem obersten Byte des Phasenakkumulators verwendet.
-			case 2:
+			case TRIANGLE:
 				if (x->dds_counter.phase > 15)
 				{
 					x->dds_counter.phase = 0;
@@ -182,7 +185,7 @@ void oscillator(chan *x){
 			break;
 		
 			//noise
-			case 3:
+			case NOISE:
 				if ((x->noise_lfsr & 0x01) == 1)
 				{
 					x->chan_out = 255;
@@ -226,7 +229,6 @@ void noise(chan *x){
 }
 
 void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
-	uint8_t tempWaveform = 0;
 	uint8_t i = 0;
 	uint8_t keyTemp = 0;
 	uint8_t j = 0;
@@ -247,12 +249,12 @@ void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
 				if ( (keyTemp & 0x01) == 1 )
 				{
 					keyNumberTemp = i*8 + j;
-					freeChannel = _searchFreeChannel(x);
-					if (freeChannel = -1)
+					freeChannel = _searchFreeChannel(x, keyNumberTemp);
+					if (freeChannel == -1)
 					{
 						return;
 					}
-					else if (!(freeChannel = -2))
+					else if (!(freeChannel == -2))
 					{
 						_calculateChannelSettings(x, freeChannel, keyNumberTemp, note, div);
 					}
@@ -286,17 +288,17 @@ uint8_t _searchFreeChannel(chan x[], uint8_t key){
 }
 
 void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]){
-	uint8_t tempWaveform = 0;
+	uint8_t tempWaveform = 1;
 	channel[channelIndex].dutycycle = 50;
 	
-	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel Struct
+	
 	
 	switch (tempWaveform){
 		
 		case RECTANGLE:
 		channel[channelIndex].frequency = note[key-1 + 37];
 		channel[channelIndex].rect_end = SAMPLEFREQ / channel[channelIndex].frequency;
-		channel[channelIndex].rect_low = ((uint32_t)channel[channelIndex].rect_end / 100)*channel[channelIndex].dutycycle;
+		channel[channelIndex].rect_low = ((uint32_t)channel[channelIndex].rect_end * channel[channelIndex].dutycycle )/ 100;
 		channel[channelIndex].waveform = RECTANGLE;
 		break;
 		
@@ -315,8 +317,22 @@ void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, floa
 		break;
 	}
 	channel[channelIndex].oscillator_on = 1;	
+	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel Struct
 }
 
-void deactivateChannel(uint8_t key[] ,chan x[]){
+void envelopChannel(uint8_t key[] ,chan x[]){
+	uint8_t i = 0;
+	uint8_t keyInByte = 0;
+	uint8_t keyIndex = 0;
 	
+	for (i = 0; i<8; i++)
+	{
+		keyIndex = x[i].pushed_key / 8;
+		keyInByte = x[i].pushed_key % 8;
+		
+		if ((key[keyIndex] & (1 << (keyInByte-1))) == 0)
+		{
+			x[i].oscillator_on = 0;
+		}
+	}
 }

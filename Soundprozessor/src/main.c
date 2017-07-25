@@ -10,14 +10,13 @@
 
 
 // Externe Globale Variablen
-extern volatile chan channel[8];
-extern union dds_cnt_t dds_counter[8];
+extern chan channel[8];
 
-extern volatile float notes[88];
-extern volatile uint8_t triangletab[TRITAB];
-extern volatile uint16_t divider[16]; 
+extern float notes[88];
+extern uint8_t triangletab[TRITAB];
+extern uint16_t divider[16]; 
 
-extern volatile uint8_t tasten[2];
+extern uint8_t tasten[8];
 
 
 
@@ -42,6 +41,12 @@ int main (void)
 	pmc_enable_periph_clk(ID_PIOB);
 	pio_set_output 	( 	PIOA, D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | DAC_NWRITE ,LOW,DISABLE,DISABLE); // Setze Ausgänge
 	
+	// Initialize Noise Channel (Seed)
+	uint8_t i;
+	for(i=0; i<8; i++){
+		channel[i].noise_lfsr = 1;
+	}
+	
 	// Timer initalisieren! 
 	timerInit();
 
@@ -51,11 +56,7 @@ int main (void)
 	//UART initalisieren
 	uartInit();
 	
-	// Initialize Noise Channel (Seed)
-	uint8_t i;
-	for(i=0; i<8; i++){
-		channel[i].noise_lfsr = 1;
-	}
+
 	
 
 	//ADC Init
@@ -66,15 +67,11 @@ int main (void)
 	//	adc_set_trigger(ADC, ADC_TRIG_SW);
 	//	adc_channel_enable(ADC, ADC_CHANNEL_2);
 
-	uint32_t delaytemp = 0;
 	uint32_t delaytasten = 0;
 	dac_out = 0;
 	
 	// ZUM OSZILLATOR TESTEN!
-	channel[0].oscillator_on = 1;
-	channel[0].waveform = TRIANGLE; // RECTANGLE/TRIANGLE / NOISE
-	channel[0].dutycycle = 50;
-	channel[0].frequency = notes[49-1];
+
 	//
 	
 	uint8_t settings = 0;	//Einstellen der Modi auf Standardwerte
@@ -91,6 +88,9 @@ int main (void)
 			
 			portexpander_einlesen(tasten[0]);
 			print_tasten();
+			
+			activateChannel(tasten ,channel, notes, divider);
+			envelopChannel(tasten ,channel);
 
 		}
 	
@@ -100,9 +100,6 @@ int main (void)
 		// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
 		// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet. 
 		// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
-		channel[0].rect_end = SAMPLEFREQ / channel[0].frequency;
-		channel[0].rect_low = ((uint32_t)channel[0].rect_end / 100)*channel[0].dutycycle ;
-		channel[0].tri_stepsize = (BIT24*channel[0].frequency*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
 	}
 }
 
