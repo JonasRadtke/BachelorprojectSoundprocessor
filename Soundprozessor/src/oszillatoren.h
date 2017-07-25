@@ -20,8 +20,8 @@
 #define DAC_NWRITE			(PIO_PA4) 
 #define D0					(PIO_PA5)
 #define D1				    (PIO_PA6)
-#define D2					(PIO_PA6)//(PIO_PA7)
-#define D3					(PIO_PA6)//(PIO_PA8)
+#define D2					(PIO_PA0)//(PIO_PA7)
+#define D3					(PIO_PA1)//(PIO_PA8)
 #define D4					(PIO_PA9)
 #define D5					(PIO_PA10)
 #define D6					(PIO_PA11)
@@ -46,11 +46,19 @@ union dds_cnt_t{
 } ;
 
 typedef struct chan1 {
+	// General
 	uint8_t oscillator_on;	// Chanel On/off
 	uint8_t waveform;		// Waveform, RECTANGLE, TRIANGLE, NOISE
 	uint8_t pushed_key;		// Number of pushed Key in this Oscillator
 	float frequency;		// Frequency of Note
 	
+	// Evelope
+	uint32_t sustainCnt;	
+	uint32_t sustainVol;
+	uint32_t releaseCnt;
+	uint32_t releaseTime;
+	
+	// Waveforms
 	uint8_t dutycycle;       // Duty Cycle in percent 0-100%
 	uint16_t rect_low;	   	// Rectangle, this is the Dutycycle 
 	uint16_t rect_end;		// Rectangle, end
@@ -58,9 +66,15 @@ typedef struct chan1 {
 	
 	uint8_t tri_table_index; // Indexing the Table of Triangle
 	uint32_t tri_stepsize;	 // Vorberechnete Schrittweite
-	
 	union dds_cnt_t dds_counter;
 	
+	uint16_t noise_lfsr;
+	uint16_t noise_cnt;
+	uint16_t noise_divider;
+	uint16_t noise_bit;
+	uint8_t noise_metal; // Metallic Noise
+	
+	// Outputs
 	uint8_t chan_out;		// Output of Chanel
 	
 	//struct unpacker		trackup;
@@ -87,6 +101,10 @@ typedef struct chan1 {
 
 void timerInit (void);
 void oscillator(chan *);
+void noise(chan *);
 
+void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]);
+uint8_t _searchFreeChannel(chan x[], uint8_t key);
+void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
 
 #endif /* OSZILLATOREN_H_ */

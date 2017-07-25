@@ -7,6 +7,8 @@
 
 #include "portexpander.h"
 
+volatile uint8_t tasten[2];
+
 void twiInit(){
 	// I2C aktivieren
 	pmc_enable_periph_clk(ID_PIOB);	// Clock auf PIOB
@@ -31,10 +33,10 @@ void portexpander_einlesen(uint8_t x[])
 		.addr_length  = 0, //keine internal adresse, nur lesen
 		.chip         = 0x38,      // TWI slave bus address
 		.buffer       = &daten1, // transfer data source buffer
-		.length       = 2,  // transfer data size (bytes)
+		.length       = 1,  // transfer data size (bytes)
 	};
 	while(twi_master_read(TWI2, &packet_read_port_1)  != TWI_SUCCESS );
-	x[0] = ~daten1;
+	tasten[0] = ~daten1;
 	delay_us(twiwaitus);
 	twi_package_t packet_read_port_2 = {
 		.addr         = 0x00,      // TWI slave memory address data
@@ -44,6 +46,6 @@ void portexpander_einlesen(uint8_t x[])
 		.length       = 1  // transfer data size (bytes)
 	};
 	while(twi_master_read(TWI2, &packet_read_port_2)  != TWI_SUCCESS );
-	x[1] = ~daten2;
+	tasten[1] = ~daten2;
 	return;
 }

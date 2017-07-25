@@ -9,17 +9,20 @@
 
 volatile chan channel[8];
 
-volatile uint16_t noise_cnt = 0;
-volatile uint16_t noise_divider = 0;
-volatile uint16_t noise_lfsr = 1 ; // SEED = 1
-volatile uint16_t noise_bit = 0;
-volatile uint16_t ausgang = 128;
 
 
-volatile uint16_t noten[88] = {4186,3951,3729,3520,3322,3136,2960,2794,2637,2489,2349,2217,2093,1976,1865,1760,1661,1568,1480,1397,1319,1245,1175,1109,1047,988,932,880,831,784,740,698,659,622,587,554,523,494,466,440,415,392,370,349,330,311,294,277,262,247,233,220,208,196,185,175,165,156,147,139,131,123,117,110,104,98,92,87,82,78,73,69,65,62,58,55,52,49,46,44,41,39,37,35,33,31,29,28};
-volatile uint8_t dreiecktabelle[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32};
+volatile float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7080,	  38.8908,	  41.2034,	  43.6535,	  46.2493,	  48.9994, 
+							  51.9130,	  55	 ,    58.2704,	  61.7354,	  65.4063,	  69.2956,	  73.4161,    77.7817,	  82.4068,	  87.3070,	  92.4986,    
+							  97.9988,    103.8261,  110	 ,   116.5409,	 123.4708,	 130.8127,	 138.5913,	 146.8323,	 155.5634,	 164.8137,	 174.6141,	 
+							 184.9972,    195.9977,	 207.6523,	 220	 ,   233.0818,	 246.9416,	 261.6255,	 277.1826,	 293.6647,	 311.1269,	 329.6275,	  
+							 349.2282,	 369.9944,	 391.9954,	 415.3046,	 440	 ,   466.1637,	 493.8833,	 523.2511,	 554.3652,	 587.3295,	 622.2539, 
+							 659.2551,	 698.4564,	 739.9888,	 783.9908,	 830.6093,	 880	 ,   932.3275,	 987.7666,	1046.5022,	1108.7305,	1174.6590,	 
+							 1244.5079,	1318.5102,	1396.9129,  1479.9776,	1567.9817,	1661.2187,	1760	 ,  1864.6550,	1975.5332,	2093.0045,	2217.4610,	 
+							 2349.3181,	2489.0158,	2637.0204,	2793.8258,	2959.9553,	3135.9634,	3322.4375,	3520	 ,  3729.3100,	3951.0664,	4186.0090}; 
+volatile uint8_t triangletab[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32}; // Triangle tab
+volatile uint16_t divider[16] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
 
-uint8_t tasten[2];
+
 
 
 void timerInit (void){
@@ -58,7 +61,7 @@ void timerInit (void){
 	| TC_CMR_WAVSEL_UP_RC			// Bei RC zurücksetzen
 	);
 	tc_enable_interrupt(TC, 2, TC_IER_CPCS); // Compare RC Interrupt einschalten
-	rc = (SystemCoreClock /2 /207826);	//
+	rc = (SystemCoreClock /2 /223721);	//
 	tc_write_rc(TC, 2, rc);				// RC einstellen
 	NVIC_EnableIRQ(TC2_IRQn);			// Interrupt einschalten
 	tc_start(TC, 2);
@@ -73,9 +76,16 @@ void TC0_Handler()
 {
 	static uint32_t test;
 	
-	oscillator(&channel[0]);
+	oscillator(&channel[0]); // Oscillator Channel
+	//oscillator(&channel[1]); // Oscillator Channel
+	//oscillator(&channel[2]); // Oscillator Channel
+	//oscillator(&channel[3]); // Oscillator Channel
+	//oscillator(&channel[4]); // Oscillator Channel
+	//oscillator(&channel[5]); // Oscillator Channel
+	//oscillator(&channel[6]); // Oscillator Channel
+	//oscillator(&channel[7]); // Oscillator Channel
 	
-	dac_out = channel[0].chan_out;
+	dac_out = channel[0].chan_out; // Accumulate Oscillator
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
@@ -84,21 +94,28 @@ void TC0_Handler()
 void TC1_Handler()
 {
 	static uint32_t test;
-	volatile uint32_t dac_temp;
+	uint32_t dac_temp;
 	
+	// Phaseaccu for Triangle Table (DDS)
+	channel[0].dds_counter.counter += channel[0].tri_stepsize;
+	channel[1].dds_counter.counter += channel[1].tri_stepsize;
+	channel[2].dds_counter.counter += channel[2].tri_stepsize;
+	channel[3].dds_counter.counter += channel[3].tri_stepsize;
+	channel[4].dds_counter.counter += channel[4].tri_stepsize;
+	channel[5].dds_counter.counter += channel[5].tri_stepsize;
+	channel[6].dds_counter.counter += channel[6].tri_stepsize;
+	channel[7].dds_counter.counter += channel[7].tri_stepsize;
 	
-		
-	channel[0].dds_counter.counter = channel[0].dds_counter.counter + channel[0].tri_stepsize;
-	
-	
-	// Ausgabe an DAC
+	// Write DAC
 	dac_temp = 0;
 
 	PIOA->PIO_SODR = DAC_NWRITE; // Write Befehl zurück nehmen
 
 	dac_temp = (((uint32_t)dac_out) << 5);		// Ausgangsbyte um 5 verschieben PA5
-	PIOA->PIO_CODR = 0x00001FE0;					// Ausgänge 0 Setzen
-	PIOA->PIO_SODR = dac_temp & 0x00001FE0;		// Neuen Wert setzen, maskiert
+	dac_temp =	dac_temp | ((((uint32_t)dac_out) >> 2) &  0x00000011);
+	
+	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
+	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
 	
 	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
 	
@@ -111,21 +128,16 @@ void TC2_Handler()
 {
 	static uint32_t test;
 	
-	noise_cnt++;
-	if (noise_cnt >= noise_divider)
-	{
-		noise_cnt = 0;
-		// Hier LFSR weiter tüdeln
-		if ((tasten[1] & 0x80) >= 1)
-		{
-			noise_bit  = ((noise_lfsr >> 0) ^ (noise_lfsr >> 6)) & 1; // 0 Bit Mit dem 6 Bit XOR ( Metallischer Klang )
-		}
-		else
-		{
-			noise_bit  = ((noise_lfsr >> 0) ^ (noise_lfsr >> 1)) & 1;	// 0 bit mit 1 bit XOR ( Normales Rauschen )
-		}
-		noise_lfsr =  (noise_lfsr >> 1) | (noise_bit << 14);	// Rechts schieben und vorne das Ergebnis einfügen
-	}
+	// 8 LFSR for Noise Channel
+	noise(&channel[0]);
+	noise(&channel[1]);
+	noise(&channel[2]);
+	noise(&channel[3]);
+	noise(&channel[4]);
+	noise(&channel[5]);
+	noise(&channel[6]);
+	noise(&channel[7]);
+	
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[2].TC_SR;
@@ -166,18 +178,18 @@ void oscillator(chan *x){
 					x->dds_counter.phase = 0;
 				}
 
-				x->chan_out = dreiecktabelle[x->dds_counter.phase];
+				x->chan_out = triangletab[x->dds_counter.phase];
 			break;
 		
 			//noise
 			case 3:
-				if ((noise_lfsr & 0x01) == 1)
+				if ((x->noise_lfsr & 0x01) == 1)
 				{
-					ausgang = 255;
+					x->chan_out = 255;
 				}
 				else
 				{
-					ausgang = 0;
+					x->chan_out = 0;
 				}
 			break;
 		
@@ -187,7 +199,124 @@ void oscillator(chan *x){
 	}
 	else //Falls der Oszillator nicht belegt ist wird der Ausgangswert gelöscht.
 	{
+		x->pushed_key = 0;
+		x->waveform = 0;
 		x->chan_out = 0;
 	}
 
+}
+
+
+void noise(chan *x){
+	x->noise_cnt++;
+	if (x->noise_cnt >= x->noise_divider)
+	{
+		x->noise_cnt = 0;
+		// Hier LFSR weiter tüdeln
+		if ((x->noise_metal) >= 1)
+		{
+			x->noise_bit  = ((x->noise_lfsr >> 0) ^ (x->noise_lfsr >> 6)) & 1; // 0 Bit Mit dem 6 Bit XOR ( Metallischer Klang )
+		}
+		else
+		{
+			x->noise_bit  = ((x->noise_lfsr >> 0) ^ (x->noise_lfsr >> 1)) & 1;	// 0 bit mit 1 bit XOR ( Normales Rauschen )
+		}
+		x->noise_lfsr =  (x->noise_lfsr >> 1) | (x->noise_bit << 14);	// Rechts schieben und vorne das Ergebnis einfügen
+	}
+}
+
+void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
+	uint8_t tempWaveform = 0;
+	uint8_t i = 0;
+	uint8_t keyTemp = 0;
+	uint8_t j = 0;
+	uint8_t keyNumberTemp = 0;
+	uint8_t freeChannel = 0;
+	
+	
+	// Search for pressed Key
+	for (i = 0; i<6; i++)
+	{
+		keyNumberTemp = 0;
+		keyTemp = key[i]; 
+		if ( keyTemp > 0) // If Pressed Key in Byte
+		{
+			// Search for pressed Key in 1 Byte
+			for (j=1; j<8; j++)
+			{
+				if ( (keyTemp & 0x01) == 1 )
+				{
+					keyNumberTemp = i*8 + j;
+					freeChannel = _searchFreeChannel(x);
+					if (freeChannel = -1)
+					{
+						return;
+					}
+					else if (!(freeChannel = -2))
+					{
+						_calculateChannelSettings(x, freeChannel, keyNumberTemp, note, div);
+					}
+				}
+			keyTemp = keyTemp >> 1; // Shift left, next key
+			}
+		}
+	}
+	
+}
+
+uint8_t _searchFreeChannel(chan x[], uint8_t key){
+	uint8_t i = 0;
+	
+	for (i = 0; i<8; i++)
+	{
+		if(x[i].pushed_key == key)
+		{
+			return -2;
+		}
+	}
+	
+	for (i = 0; i<8; i++)
+	{
+		if (x[i].oscillator_on == 0)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]){
+	uint8_t tempWaveform = 0;
+	channel[channelIndex].dutycycle = 50;
+	
+	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel Struct
+	
+	switch (tempWaveform){
+		
+		case RECTANGLE:
+		channel[channelIndex].frequency = note[key-1 + 37];
+		channel[channelIndex].rect_end = SAMPLEFREQ / channel[channelIndex].frequency;
+		channel[channelIndex].rect_low = ((uint32_t)channel[channelIndex].rect_end / 100)*channel[channelIndex].dutycycle;
+		channel[channelIndex].waveform = RECTANGLE;
+		break;
+		
+		case TRIANGLE:
+		channel[channelIndex].frequency = note[key-1 + 37];
+		channel[channelIndex].tri_stepsize = (BIT24*channel[channelIndex].frequency*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
+		channel[channelIndex].waveform = TRIANGLE;
+		break;
+		
+		case NOISE:
+		channel[channelIndex].noise_divider = div[(key-1)%16]; // Only 16 divider, repeats after 16 Keys
+		channel[channelIndex].waveform = NOISE;
+		break;
+		
+		default:
+		break;
+	}
+	channel[channelIndex].oscillator_on = 1;	
+}
+
+void deactivateChannel(uint8_t key[] ,chan x[]){
+	
 }

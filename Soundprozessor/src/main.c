@@ -13,10 +13,11 @@
 extern volatile chan channel[8];
 extern union dds_cnt_t dds_counter[8];
 
-extern volatile uint16_t noten;
-extern volatile uint8_t dreiecktabelle;
+extern volatile float notes[88];
+extern volatile uint8_t triangletab[TRITAB];
+extern volatile uint16_t divider[16]; 
 
-extern uint8_t tasten[2];
+extern volatile uint8_t tasten[2];
 
 
 
@@ -29,10 +30,10 @@ int main (void)
 {
 	pmc_switch_sclk_to_32kxtal(PMC_OSC_XTAL);   // enable external 32.768kHz crystal
 	while (!pmc_osc_is_ready_32kxtal());        // wait until oscillator is ready
-	sysclk_init();		// 48 Mhz einstellen
-	wdt_disable(WDT);	// Watchdog ausschalten
+	sysclk_init();				// 48 Mhz einstellen
+	wdt_disable(WDT);			// Watchdog ausschalten
 	SystemCoreClockUpdate();	// Systemclock akualisieren
-	fpu_enable ();	// Floatingpoint Unit aktivieren, Achtung richtige Optimierung einstellen!
+	fpu_enable ();				// Floatingpoint Unit aktivieren, Achtung richtige Optimierung einstellen!
 	delay_init(SystemCoreClock);	
 	//SystemCoreClock = 44300000;
 	SysTick_Config(SystemCoreClock / 1000);      /* Configure SysTick to generate an interrupt every millisecond */
@@ -49,24 +50,31 @@ int main (void)
 
 	//UART initalisieren
 	uartInit();
-
+	
+	// Initialize Noise Channel (Seed)
+	uint8_t i;
+	for(i=0; i<8; i++){
+		channel[i].noise_lfsr = 1;
+	}
+	
 
 	//ADC Init
-//	pmc_enable_periph_clk(ADC);
-//	adc_enable();
-//	adc_get_config_defaults(&adc_cfg);
-//	adc_init(ADC, &adc_cfg);
-//	adc_set_trigger(ADC, ADC_TRIG_SW);
-//	adc_channel_enable(ADC, ADC_CHANNEL_2);
+	//	pmc_enable_periph_clk(ADC);
+	//	adc_enable();
+	//	adc_get_config_defaults(&adc_cfg);
+	//	adc_init(ADC, &adc_cfg);
+	//	adc_set_trigger(ADC, ADC_TRIG_SW);
+	//	adc_channel_enable(ADC, ADC_CHANNEL_2);
 
 	uint32_t delaytemp = 0;
-	//delay_ms(1000);
+	uint32_t delaytasten = 0;
 	dac_out = 0;
 	
 	// ZUM OSZILLATOR TESTEN!
 	channel[0].oscillator_on = 1;
-	channel[0].waveform = RECTANGLE; // RECTANGLE/TRIANGLE / NOISE
-	channel[0].frequency = 880;
+	channel[0].waveform = TRIANGLE; // RECTANGLE/TRIANGLE / NOISE
+	channel[0].dutycycle = 50;
+	channel[0].frequency = notes[49-1];
 	//
 	
 	uint8_t settings = 0;	//Einstellen der Modi auf Standardwerte
@@ -75,25 +83,25 @@ int main (void)
 	{
 		
 		
+	
+	
+		if ((ticks) >= delaytasten+10)
+		{
+			delaytasten = ticks;
+			
+			portexpander_einlesen(tasten[0]);
+			print_tasten();
 
-	//	portexpander_einlesen(tasten[0]);
-
-	char text[200];
-	sprintf(text,   " Tasten 1: \n");
-	uartsendstring(text);
+		}
 	
-	delaytemp = ticks+1;
-	
-	
-	while (!((ticks) >= delaytemp+1000));
 
 	
-	//	print_tasten();
+
 		// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
 		// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet. 
 		// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
 		channel[0].rect_end = SAMPLEFREQ / channel[0].frequency;
-		channel[0].rect_low = channel[0].rect_end / 2 ;
+		channel[0].rect_low = ((uint32_t)channel[0].rect_end / 100)*channel[0].dutycycle ;
 		channel[0].tri_stepsize = (BIT24*channel[0].frequency*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
 	}
 }
