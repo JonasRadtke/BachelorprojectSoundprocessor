@@ -18,10 +18,12 @@ extern uint16_t divider[16];
 
 extern uint8_t tasten[8];
 
-extern uint8_t multiplex;	//globale Variable zum multiplexen der Tastenblöcke
+
 
 volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
 uint32_t wt = 0;
+
+
 
 int main (void)
 {
@@ -72,16 +74,7 @@ int main (void)
 
 	//
 	
-	twi_package_t multiplex_I2C =	{			//I2C Struktur zum multiplexen
-		.addr			= 0x0,		//!!!Adresse muss noch angepasst werden!!!!
-		.addr_length	= 0,
-		.chip			= 0x38,
-		.buffer			= &multiplex,
-	.length			= 1			 };
-	
-	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
-	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
-	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0}; //Standardmodi einstellen
+	uint8_t settings = 0;	//Einstellen der Modi auf Standardwerte
 	
 	while(1)
 	{
