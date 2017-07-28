@@ -94,7 +94,9 @@ int main (void)
 			delaytasten = ticks;
 			
 			portexpander_einlesen(tasten[0]);
+			
 			print_tasten();
+			
 			
 			activateChannel(tasten ,channel, notes, divider);
 			envelopChannel(tasten ,channel);
