@@ -1,16 +1,23 @@
 #include "perepherie.h"
 
 
-void readkeys(uint8_t* keys,uint8_t* newkeys,twi_package_t multiplex_I2C)
+void readkeys(uint8_t* keys,uint8_t* newkeys)
 {
-	uint8_t i=0,j,k,keynumber=0,newkeynumber=0, oldkeynumber=0,notkeynumbermax=1,notoldkey,input, oldkeys[8];
+	uint8_t i=0, j, k, keynumber=0, newkeynumber=0, oldkeynumber=0, notkeynumbermax=1, notoldkey, input, multiplex, oldkeys[8];
 	
 	twi_package_t input_I2C =	{
 		.addr			= 0x0,		//!!!Adresse muss noch angepasst werden!!!!
 		.addr_length	= 0,
 		.chip			= 0x38,
 		.buffer			= &input,
-	.length			= 1			 };
+		.length			= 1		 };
+	
+	twi_package_t multiplex_I2C =	{			//I2C Struktur zum multiplexen
+		.addr			= 0x0,		//!!!Adresse muss noch angepasst werden!!!!
+		.addr_length	= 0,
+		.chip			= 0x38,
+		.buffer			= &multiplex,
+		.length			= 1		 };
 	
 	while(i<6 && notkeynumbermax)
 	{
@@ -122,28 +129,28 @@ void  writeLed(Settings settings)
 	return;
 }
 
-uint8_t getReleaseValue();		//Datentyp klaeren
+uint8_t getReleaseValue()	//Datentyp klaeren
 {
 	adc_start_software_conversion(ADC);
 	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));	//Channel klaeren
 	return adc_channel_get_value(ADC, ADC_CHANNEL_2);
 }
 
-uint8_t getSustainValue();
+uint8_t getSustainValue()
 {
 	adc_start_software_conversion(ADC);
 	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));	//Channel klaeren
 	return adc_channel_get_value(ADC, ADC_CHANNEL_2);
 }
 
-uint8_t getArpeggioValue();
+uint8_t getArpeggioValue()
 {
 	adc_start_software_conversion(ADC);
 	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));	//Channel klaeren
 	return adc_channel_get_value(ADC, ADC_CHANNEL_2);
 }
 
-uint8_t getDutyCycleVaule();
+uint8_t getDutyCycleVaule()
 {
 	adc_start_software_conversion(ADC);
 	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));	//Channel klaeren

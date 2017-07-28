@@ -4,18 +4,20 @@
 #include <string.h>
 #include <math.h>
 
-struct Settings
+typedef struct 
 {
 	uint8_t waveform;
 	uint8_t burst;
 	uint8_t arpeggio;
 	uint8_t Release;
 	uint8_t Sustain;
-};
+} Settings;
 
-void readkeys(uint8_t*,uint8_t*,twi_package_t);
+
+
+void readkeys(uint8_t*,uint8_t*);
 Settings readSettings(Settings);
-void writeLed(Settings*);
+void writeLed(Settings);
 
 uint8_t getReleaseValue();
 uint8_t getSustainTonValue();
