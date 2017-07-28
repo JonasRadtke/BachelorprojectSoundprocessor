@@ -288,7 +288,7 @@ uint8_t _searchFreeChannel(chan x[], uint8_t key){
 }
 
 void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]){
-	uint8_t tempWaveform = 1;
+	uint8_t tempWaveform = 2;
 	channel[channelIndex].dutycycle = 50;
 	
 	
