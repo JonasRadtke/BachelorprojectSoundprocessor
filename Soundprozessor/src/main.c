@@ -19,9 +19,8 @@ extern uint16_t divider[16];
 extern uint8_t tasten[8];
 
 
+volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
 
-
-volatile uint32_t ticks = 0; // Systemzeit zeit Start in Millisekunden
 uint32_t wt = 0;
 
 
@@ -85,7 +84,11 @@ int main (void)
 
 	//
 	
-	uint8_t settings = 0;	//Einstellen der Modi auf Standardwerte
+
+	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
+	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
+	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0}; //Standardmodi einstellen
+
 	
 	while(1)
 	{
