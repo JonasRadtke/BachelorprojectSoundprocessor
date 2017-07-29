@@ -9,6 +9,10 @@
 
 chan channel[8];
 
+uint32_t sustainVolume = 0xFFFFFFFF/2;
+uint32_t delayzeit = 100;
+uint32_t releasezeit = 100;
+
 
 
 float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7080,	  38.8908,	  41.2034,	  43.6535,	  46.2493,	  48.9994, 
@@ -75,7 +79,7 @@ void timerInit (void){
 void TC0_Handler()
 {
 	static uint32_t test;
-	
+
 	oscillator(&channel[0]); // Oscillator Channel
 	oscillator(&channel[1]); // Oscillator Channel
 	oscillator(&channel[2]); // Oscillator Channel
@@ -90,6 +94,7 @@ void TC0_Handler()
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
 	if (test){}
+
 }
 
 void TC1_Handler()
@@ -115,8 +120,8 @@ void TC1_Handler()
 	dac_temp = (((uint32_t)dac_out) << 5);		// Ausgangsbyte um 5 verschieben PA5
 	dac_temp =	dac_temp | ((((uint32_t)dac_out) >> 2) &  0x00000011);
 	
-	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
-	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
+//	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
+//	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
 	
 	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
 	
@@ -124,26 +129,29 @@ void TC1_Handler()
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[1].TC_SR; 
 	if (test){}
+	
 }
 
 void TC2_Handler()
 {
 	static uint32_t test;
-	
 	// 8 LFSR for Noise Channel
+	PIOA->PIO_CODR =D0;
+
 	noise(&channel[0]);
-	noise(&channel[1]);
-	noise(&channel[2]);
-	noise(&channel[3]);
-	noise(&channel[4]);
-	noise(&channel[5]);
-	noise(&channel[6]);
-	noise(&channel[7]);
+//	noise(&channel[1]);
+//	noise(&channel[2]);
+//	noise(&channel[3]);
+//	noise(&channel[4]);
+//	noise(&channel[5]);
+//	noise(&channel[6]);
+//	noise(&channel[7]);
 	
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[2].TC_SR;
 	if (test){}
+	PIOA->PIO_SODR = D0;
 }
 
 void oscillator(chan *x){
@@ -158,7 +166,7 @@ void oscillator(chan *x){
 			case RECTANGLE:
 				if (x->rect_count <= x->rect_low) // Wenn Dutycycle noch nicht erreicht Rechteck High!
 				{
-					x->chan_out = 128;
+					x->chan_out = (uint8_t)(x->envelopeVolume >> 24);
 				}
 				else
 				{
@@ -188,7 +196,7 @@ void oscillator(chan *x){
 			case NOISE:
 				if ((x->noise_lfsr & 0x01) == 1)
 				{
-					x->chan_out = 255;
+					x->chan_out = (uint8_t)(x->envelopeVolume >> 24);
 				}
 				else
 				{
@@ -202,8 +210,6 @@ void oscillator(chan *x){
 	}
 	else //Falls der Oszillator nicht belegt ist wird der Ausgangswert gelöscht.
 	{
-		x->pushed_key = 0;
-		x->waveform = 0;
 		x->chan_out = 0;
 	}
 
@@ -233,7 +239,7 @@ void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
 	uint8_t keyTemp = 0;
 	uint8_t j = 0;
 	uint8_t keyNumberTemp = 0;
-	uint8_t freeChannel = 0;
+	int8_t freeChannel = 0;
 	
 	
 	// Search for pressed Key
@@ -246,18 +252,19 @@ void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
 			// Search for pressed Key in 1 Byte
 			for (j=1; j<8; j++)
 			{
-				if ( (keyTemp & 0x01) == 1 )
+				if ( (keyTemp & 0x01) == 1 ) // If Key is pressed
 				{
-					keyNumberTemp = i*8 + j;
-					freeChannel = _searchFreeChannel(x, keyNumberTemp);
-					if (freeChannel == -1)
+					keyNumberTemp = i*8 + j;	// Calculate Key Number
+					freeChannel = _searchFreeChannel(x, keyNumberTemp);	// looking for free channel
+					if (freeChannel == 100)	// If no Channel ist free, return
 					{
 						return;
 					}
-					else if (!(freeChannel == -2))
+					else if (freeChannel < 100) // If free channel is found
 					{
-						_calculateChannelSettings(x, freeChannel, keyNumberTemp, note, div);
+						_calculateChannelSettings(x, freeChannel, keyNumberTemp, note, div); // Calculate the Settings for the specific channel
 					}
+					else{}
 				}
 			keyTemp = keyTemp >> 1; // Shift left, next key
 			}
@@ -266,35 +273,38 @@ void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
 	
 }
 
-uint8_t _searchFreeChannel(chan x[], uint8_t key){
+int8_t _searchFreeChannel(chan x[], uint8_t key){
 	uint8_t i = 0;
 	
+	// Looking for pressed key has already a active channel
 	for (i = 0; i<8; i++)
 	{
 		if(x[i].pushed_key == key)
 		{
-			return -2;
+			return 101;
 		}
 	}
 	
+	// Looking for Free Channel
 	for (i = 0; i<8; i++)
 	{
 		if (x[i].oscillator_on == 0)
 		{
-			return i;
+			return i; // Return Number of free Channel
 		}
 	}
-	return -1;
+	return 100; // Return no free Channel found
 }
 
 void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]){
-	uint8_t tempWaveform = 2;
-	channel[channelIndex].dutycycle = 50;
+	uint8_t tempWaveform = 1;
+	channel[channelIndex].dutycycle = 50; // MUSS NOCH GEÄNDERT WERDEN
 	
 	
 	
 	switch (tempWaveform){
 		
+		// Settings for Rectangle Waveform
 		case RECTANGLE:
 		channel[channelIndex].frequency = note[key-1 + 37];
 		channel[channelIndex].rect_end = SAMPLEFREQ / channel[channelIndex].frequency;
@@ -302,12 +312,14 @@ void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, floa
 		channel[channelIndex].waveform = RECTANGLE;
 		break;
 		
+		// Settings for Triangle Waveform
 		case TRIANGLE:
 		channel[channelIndex].frequency = note[key-1 + 37];
 		channel[channelIndex].tri_stepsize = (BIT24*channel[channelIndex].frequency*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
 		channel[channelIndex].waveform = TRIANGLE;
 		break;
 		
+		// Settings for Noise
 		case NOISE:
 		channel[channelIndex].noise_divider = div[(key-1)%16]; // Only 16 divider, repeats after 16 Keys
 		channel[channelIndex].waveform = NOISE;
@@ -316,8 +328,14 @@ void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, floa
 		default:
 		break;
 	}
+	channel[channelIndex].envelopeVolume = 0xFFFFFFFF; // Preset for envelope Volume
+	channel[channelIndex].delayTime = delayzeit;
+	channel[channelIndex].releaseTime = releasezeit;
+	channel[channelIndex].sustainVol = sustainVolume;
+	channel[channelIndex].envelopeStep = (channel[channelIndex].envelopeVolume-channel[channelIndex].sustainVol) / channel[channelIndex].delayTime;
+	channel[channelIndex].adsrCnt = channel[channelIndex].releaseTime + channel[channelIndex].delayTime;
+	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel struct
 	channel[channelIndex].oscillator_on = 1;	
-	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel Struct
 }
 
 void envelopChannel(uint8_t key[] ,chan x[]){
@@ -332,7 +350,54 @@ void envelopChannel(uint8_t key[] ,chan x[]){
 		
 		if ((key[keyIndex] & (1 << (keyInByte-1))) == 0)
 		{
-			x[i].oscillator_on = 0;
+			if (x[i].oscillator_on >= 1) // If Oscillator is On
+			{
+				//x[i].oscillator_on = 0;
+				// If Sustain already active
+				if (x[i].adsrCnt <= x[i].delayTime)
+				{
+					x[i].envelopeStep = x[i].sustainVol / x[i].releaseTime;
+				}
+				else // Sustain not active, release Volume from actual Delay Volume
+				{
+					x[i].envelopeStep = x[i].envelopeVolume / x[i].releaseTime;
+				}
+				x[i].releaseActiv = 1;
+			}
+			 
 		}
 	}
+	
+	// Generate ADSR
+	for (i = 0; i<8; i++)
+	{
+		if (x[i].oscillator_on >= 1) // If Oscillator is On
+		{
+			if (x[i].adsrCnt >= (x[i].delayTime)) // Delayphase
+			{
+				x[i].envelopeVolume -= x[i].envelopeStep;
+				x[i].adsrCnt--;
+			}
+			else if ((x[i].adsrCnt <= x[i].delayTime) & !x[i].releaseActiv) // Sustainphase (Constant Volume)
+			{
+				x[i].envelopeVolume = x[i].sustainVol;
+				x[i].adsrCnt = x[i].delayTime;
+			}
+			else if (x[i].releaseActiv)		// Releasephase
+			{
+				x[i].adsrCnt--;
+				x[i].envelopeVolume -= x[i].envelopeStep;		
+			}
+		
+			if (x[i].adsrCnt <= 0) // End of Tone
+			{
+				x[i].oscillator_on = 0;
+				x[i].releaseActiv = 0;
+				x[i].pushed_key = 0;
+				x[i].waveform = 0;
+				x[i].chan_out = 0;
+			}
+		}	
+	}
+	
 }

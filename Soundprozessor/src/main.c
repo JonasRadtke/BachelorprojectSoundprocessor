@@ -20,7 +20,8 @@ extern uint8_t tasten[8];
 
 
 
-volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
+
+volatile uint32_t ticks = 0; // Systemzeit zeit Start in Millisekunden
 uint32_t wt = 0;
 
 
@@ -56,7 +57,16 @@ int main (void)
 	//UART initalisieren
 	uartInit();
 	
-
+	for (i=0; i<8; i++)
+	{
+		tasten[i]=0;
+	}
+	
+	for (i=0; i<8; i++)
+	{
+		channel[i].oscillator_on = 0;
+		channel[i].releaseActiv = 0;
+	}
 	
 
 	//ADC Init
@@ -68,6 +78,7 @@ int main (void)
 	//	adc_channel_enable(ADC, ADC_CHANNEL_2);
 
 	uint32_t delaytasten = 0;
+	uint32_t delayenv = 0;
 	dac_out = 0;
 	
 	// ZUM OSZILLATOR TESTEN!
@@ -88,14 +99,20 @@ int main (void)
 			
 			portexpander_einlesen(tasten[0]);
 			
-			print_tasten();
-			
-			
+	//	print_tasten();
 			activateChannel(tasten ,channel, notes, divider);
-			envelopChannel(tasten ,channel);
-
+		envelopChannel(tasten ,channel);
+		
 		}
 	
+		if ((ticks) >= delayenv+1)
+		{
+			delayenv = ticks;	
+		
+			envelopChannel(tasten ,channel);
+			
+
+		}
 
 	
 
@@ -111,6 +128,9 @@ int main (void)
 // Systemtakt 1ms
 void SysTick_Handler(){
 	ticks++;	
+//	PIOA->PIO_SODR = D0;	
+//	PIOA->PIO_CODR = D0;
+
 }
 
 

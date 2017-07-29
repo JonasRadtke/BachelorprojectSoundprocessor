@@ -17,6 +17,7 @@
 
 #define SAMPLEFREQ			(38000)
 #define PHASEAKKU_FREQ		(100000)
+#define ENVELOP_TIME		(1)      // in milliseconds
 #define DAC_NWRITE			(PIO_PA4) 
 #define D0					(PIO_PA5)
 #define D1				    (PIO_PA6)
@@ -53,27 +54,33 @@ typedef struct chan1 {
 	float frequency;		// Frequency of Note
 	
 	// Envelope
-	uint8_t envelopeVolume;	// Actual Volume
-	uint32_t sustainCnt;	// Counter for Sustain
+	uint32_t envelopeVolume;	// Actual Volume
+	uint32_t envelopeStep;
+	int32_t adsrCnt;			// Counter for Attack,Delay,Sustain,Release - in milliseconds, counts to zero
+	
+	uint32_t delayTime;		// Length of Delay - in milliseconds
+	
 	uint32_t sustainVol;	// Sustain Volume (constant)
-	uint32_t releaseCnt;	// Counter for Release
-	uint32_t releaseTime;
+	
+	uint32_t releaseActiv;   // Release is Active
+	uint32_t releaseTime;	// Length of Release - in milliseconds
+
 	
 	// Waveforms
-	uint8_t dutycycle;       // Duty Cycle in percent 0-100%
-	uint16_t rect_low;	   	// Rectangle, this is the Dutycycle 
-	uint16_t rect_end;		// Rectangle, end
-	uint16_t rect_count;	 // Rectangle counter, for internal counting
+	uint32_t dutycycle;       // Duty Cycle in percent 0-100%
+	uint32_t rect_low;	   	// Rectangle, this is the Dutycycle 
+	uint32_t rect_end;		// Rectangle, end
+	uint32_t rect_count;	 // Rectangle counter, for internal counting
 	
-	uint8_t tri_table_index; // Indexing the Table of Triangle
+	uint32_t tri_table_index; // Indexing the Table of Triangle
 	uint32_t tri_stepsize;	 // Vorberechnete Schrittweite
 	union dds_cnt_t dds_counter;
 	
-	uint16_t noise_lfsr;
-	uint16_t noise_cnt;
-	uint16_t noise_divider;
-	uint16_t noise_bit;
-	uint8_t noise_metal; // Metallic Noise
+	uint32_t noise_lfsr;
+	uint32_t noise_cnt;
+	uint32_t noise_divider;
+	uint32_t noise_bit;
+	uint32_t noise_metal; // Metallic Noise
 	
 	// Outputs
 	uint8_t chan_out;		// Output of Chanel
@@ -105,7 +112,7 @@ void oscillator(chan *);
 void noise(chan *);
 
 void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]);
-uint8_t _searchFreeChannel(chan x[], uint8_t key);
+int8_t _searchFreeChannel(chan x[], uint8_t key);
 void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
 void envelopChannel(uint8_t key[] ,chan x[]);
 
