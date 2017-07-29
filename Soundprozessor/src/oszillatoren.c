@@ -120,8 +120,8 @@ void TC1_Handler()
 	dac_temp = (((uint32_t)dac_out) << 5);		// Ausgangsbyte um 5 verschieben PA5
 	dac_temp =	dac_temp | ((((uint32_t)dac_out) >> 2) &  0x00000011);
 	
-//	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
-//	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
+	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
+	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
 	
 	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
 	

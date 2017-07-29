@@ -13,6 +13,7 @@
 #include "uartt.h"
 #include "portexpander.h"
 #include "oszillatoren.h"
+#include "perepherie.h"
 
 
 
