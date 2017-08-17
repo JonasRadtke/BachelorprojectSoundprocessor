@@ -58,12 +58,12 @@ typedef struct chan1 {
 	uint32_t envelopeStep;
 	int32_t adsrCnt;			// Counter for Attack,Delay,Sustain,Release - in milliseconds, counts to zero
 	
-	uint32_t delayTime;		// Length of Delay - in milliseconds
+	int32_t delayTime;		// Length of Delay - in milliseconds
 	
 	uint32_t sustainVol;	// Sustain Volume (constant)
 	
 	uint32_t releaseActiv;   // Release is Active
-	uint32_t releaseTime;	// Length of Release - in milliseconds
+	int32_t releaseTime;	// Length of Release - in milliseconds
 
 	
 	// Waveforms

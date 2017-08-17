@@ -14,12 +14,6 @@
 #include "portexpander.h"
 #include "oszillatoren.h"
 #include "perepherie.h"
-
-
-
-
-
-void print_xy(void);
-void print_xy_raw(void);
+#include "dac.h"
 
 void print_tasten(void);
