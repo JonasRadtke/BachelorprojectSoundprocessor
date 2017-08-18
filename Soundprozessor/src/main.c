@@ -40,6 +40,7 @@ int main (void)
 	pmc_enable_periph_clk(ID_PIOA);	
 	pmc_enable_periph_clk(ID_PIOB);
 //	pio_set_output 	( 	PIOA, D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | DAC_NWRITE ,LOW,DISABLE,DISABLE); // Setze Ausgänge
+	pio_set_output 	( 	PIOA, LDAC ,LOW,DISABLE,DISABLE); // Setze Ausgänge
 	
 	// Initialize Noise Channel (Seed)
 	uint8_t i;
@@ -83,43 +84,28 @@ int main (void)
 	uint32_t delayenv = 0;
 	dac_out = 0;
 	
-	// ZUM OSZILLATOR TESTEN!
-
-	//
-	
 
 	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
 	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0}; //Standardmodi einstellen
-
+	
 	while(1)
 	{
 		
 		if ((ticks) >= delaytasten+10)
 		{
 			delaytasten = ticks;
-			SPI->SPI_TDR = 	0x0001A0A0;
-		
-		//printf("test");	
-	//		portexpander_einlesen(tasten[0]);
-			
+	//	portexpander_einlesen(tasten[0]);	
 	//	print_tasten();
 	//	activateChannel(tasten ,channel, notes, divider);
 	//	envelopChannel(tasten ,channel);
-		
 		}
 	
 		if ((ticks) >= delayenv+1)
 		{
-			delayenv = ticks;	
-		
+			delayenv = ticks;		
 	//		envelopChannel(tasten ,channel);
-			
-
 		}
-
-	
-
 
 	}
 }

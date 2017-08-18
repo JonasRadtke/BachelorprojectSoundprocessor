@@ -29,6 +29,7 @@
 #define D7					(PIO_PA12)
 #define TRITAB				(16)
 #define BIT24				(16777216)
+#define LDAC				(PIO_PA12)
 
 #define RECTANGLE			(1)
 #define TRIANGLE			(2)

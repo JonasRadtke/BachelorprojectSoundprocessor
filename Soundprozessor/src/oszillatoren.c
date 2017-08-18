@@ -12,6 +12,8 @@ chan channel[8];
 uint32_t sustainVolume = 0xFFFFFFFF/2;
 uint32_t delayzeit = 100;
 uint32_t releasezeit = 100;
+uint32_t dataout = 0;
+uint32_t out = 0;
 
 
 
@@ -118,15 +120,24 @@ void TC1_Handler()
 	// Write DAC
 	dac_temp = 0;
 
-	PIOA->PIO_SODR = DAC_NWRITE; // Write Befehl zurück nehmen
+//	PIOA->PIO_SODR = DAC_NWRITE; // Write Befehl zurück nehmen
 
 	dac_temp = (((uint32_t)dac_out) << 5);		// Ausgangsbyte um 5 verschieben PA5
 	dac_temp =	dac_temp | ((((uint32_t)dac_out) >> 2) &  0x00000011);
 	
-	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
-	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
+//	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
+//	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
 	
-	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
+//	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
+	dataout++;
+	out = 0;
+	if (dataout >= 4096)
+	{
+		dataout = 0;
+	}
+	
+	out = 0x01000000 | 0x00003000 | (dataout & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
+	SPI->SPI_TDR = 	out;
 	
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
