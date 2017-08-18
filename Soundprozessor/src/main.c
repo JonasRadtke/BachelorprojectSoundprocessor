@@ -39,7 +39,8 @@ int main (void)
 
 	pmc_enable_periph_clk(ID_PIOA);	
 	pmc_enable_periph_clk(ID_PIOB);
-	pio_set_output 	( 	PIOA, D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | DAC_NWRITE ,LOW,DISABLE,DISABLE); // Setze Ausgänge
+//	pio_set_output 	( 	PIOA, D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | DAC_NWRITE ,LOW,DISABLE,DISABLE); // Setze Ausgänge
+	pio_set_output 	( 	PIOA, LDAC ,LOW,DISABLE,DISABLE); // Setze Ausgänge
 	
 	// Initialize Noise Channel (Seed)
 	uint8_t i;
@@ -55,6 +56,9 @@ int main (void)
 
 	//UART initalisieren
 	uartInit();
+	
+	//SPI Init
+	spiInit();
 	
 	for (i=0; i<8; i++)
 	{
@@ -80,48 +84,29 @@ int main (void)
 	uint32_t delayenv = 0;
 	dac_out = 0;
 	
-	// ZUM OSZILLATOR TESTEN!
-
-	//
-	
 
 	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
 	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0}; //Standardmodi einstellen
-
 	
 	while(1)
 	{
 		
-		
-	
-	
 		if ((ticks) >= delaytasten+10)
 		{
 			delaytasten = ticks;
-			
-			portexpander_einlesen(tasten[0]);
-			
+	//	portexpander_einlesen(tasten[0]);	
 	//	print_tasten();
-			activateChannel(tasten ,channel, notes, divider);
-		envelopChannel(tasten ,channel);
-		
+	//	activateChannel(tasten ,channel, notes, divider);
+	//	envelopChannel(tasten ,channel);
 		}
 	
 		if ((ticks) >= delayenv+1)
 		{
-			delayenv = ticks;	
-		
-			envelopChannel(tasten ,channel);
-			
-
+			delayenv = ticks;		
+	//		envelopChannel(tasten ,channel);
 		}
 
-	
-
-		// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
-		// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet. 
-		// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
 	}
 }
 
@@ -131,9 +116,6 @@ int main (void)
 // Systemtakt 1ms
 void SysTick_Handler(){
 	ticks++;	
-//	PIOA->PIO_SODR = D0;	
-//	PIOA->PIO_CODR = D0;
-
 }
 
 

@@ -19,7 +19,7 @@ void readkeys(uint8_t*,uint8_t*);
 uint8_t readSettings(Settings*,uint8_t);
 void writeLed(Settings);
 
-uint8_t getReleaseValue();
-uint8_t getSustainTonValue();
-uint8_t getArpeggioValue();
-uint8_t getDutyCycleVaule();
+uint8_t getReleaseValue(void);
+uint8_t getSustainValue(void);
+uint8_t getArpeggioValue(void);
+uint8_t getDutyCycleVaule(void);

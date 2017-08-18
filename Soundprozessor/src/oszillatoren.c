@@ -12,11 +12,13 @@ chan channel[8];
 uint32_t sustainVolume = 0xFFFFFFFF/2;
 uint32_t delayzeit = 100;
 uint32_t releasezeit = 100;
+uint32_t dataout = 0;
+uint32_t out = 0;
 
 
 
 float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7080,	  38.8908,	  41.2034,	  43.6535,	  46.2493,	  48.9994, 
-							  51.9130,	  55	 ,    58.2704,	  61.7354,	  65.4063,	  69.2956,	  73.4161,    77.7817,	  82.4068,	  87.3070,	  92.4986,    
+					 51.9130,	  55	 ,    58.2704,	  61.7354,	  65.4063,	  69.2956,	  73.4161,    77.7817,	  82.4068,	  87.3070,	  92.4986,    
 							  97.9988,    103.8261,  110	 ,   116.5409,	 123.4708,	 130.8127,	 138.5913,	 146.8323,	 155.5634,	 164.8137,	 174.6141,	 
 							 184.9972,    195.9977,	 207.6523,	 220	 ,   233.0818,	 246.9416,	 261.6255,	 277.1826,	 293.6647,	 311.1269,	 329.6275,	  
 							 349.2282,	 369.9944,	 391.9954,	 415.3046,	 440	 ,   466.1637,	 493.8833,	 523.2511,	 554.3652,	 587.3295,	 622.2539, 
@@ -103,6 +105,9 @@ void TC1_Handler()
 	uint32_t dac_temp;
 	
 	// Phaseaccu for Triangle Table (DDS)
+	// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
+	// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet.
+	// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
 	channel[0].dds_counter.counter += channel[0].tri_stepsize;
 	channel[1].dds_counter.counter += channel[1].tri_stepsize;
 	channel[2].dds_counter.counter += channel[2].tri_stepsize;
@@ -115,15 +120,24 @@ void TC1_Handler()
 	// Write DAC
 	dac_temp = 0;
 
-	PIOA->PIO_SODR = DAC_NWRITE; // Write Befehl zurück nehmen
+//	PIOA->PIO_SODR = DAC_NWRITE; // Write Befehl zurück nehmen
 
 	dac_temp = (((uint32_t)dac_out) << 5);		// Ausgangsbyte um 5 verschieben PA5
 	dac_temp =	dac_temp | ((((uint32_t)dac_out) >> 2) &  0x00000011);
 	
-	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
-	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
+//	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
+//	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
 	
-	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
+//	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
+	dataout++;
+	out = 0;
+	if (dataout >= 4096)
+	{
+		dataout = 0;
+	}
+	
+	out = 0x01000000 | 0x00003000 | (dataout & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
+	SPI->SPI_TDR = 	out;
 	
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
