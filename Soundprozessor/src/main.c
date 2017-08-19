@@ -60,6 +60,9 @@ int main (void)
 	//SPI Init
 	spiInit();
 	
+	//ADC Init
+	adcInit();
+	
 	for (i=0; i<8; i++)
 	{
 		tasten[i]=0;
@@ -71,15 +74,6 @@ int main (void)
 		channel[i].releaseActiv = 0;
 	}
 	
-
-	//ADC Init
-	//	pmc_enable_periph_clk(ADC);
-	//	adc_enable();
-	//	adc_get_config_defaults(&adc_cfg);
-	//	adc_init(ADC, &adc_cfg);
-	//	adc_set_trigger(ADC, ADC_TRIG_SW);
-	//	adc_channel_enable(ADC, ADC_CHANNEL_2);
-
 	uint32_t delaytasten = 0;
 	uint32_t delayenv = 0;
 	dac_out = 0;
@@ -92,26 +86,24 @@ int main (void)
 	while(1)
 	{
 		
-		if ((ticks) >= delaytasten+10)
+		if ((ticks) >= delaytasten+100)
 		{
-			delaytasten = ticks;
-	//	portexpander_einlesen(tasten[0]);	
-	//	print_tasten();
-	//	activateChannel(tasten ,channel, notes, divider);
-	//	envelopChannel(tasten ,channel);
+			delaytasten = ticks;	
+		//	activateChannel(tasten ,channel, notes, divider);
+		//	envelopChannel(tasten ,channel);
 		}
 	
 		if ((ticks) >= delayenv+1)
 		{
 			delayenv = ticks;		
-	//		envelopChannel(tasten ,channel);
+		//	envelopChannel(tasten ,channel);
 		}
+		
+		// Read all Keys, Write all LED
+		readkeys( keys, &newkeys, &settings);
 
 	}
 }
-
-//
-
 
 // Systemtakt 1ms
 void SysTick_Handler(){

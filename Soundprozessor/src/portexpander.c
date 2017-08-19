@@ -14,11 +14,31 @@ void twiInit(){
 	pmc_enable_periph_clk(ID_PIOB);	// Clock auf PIOB
 	pio_set_peripheral 	( PIOB, PIO_PERIPH_B, PIO_PB0 | PIO_PB1 );	// TWI pins aktivieren, Pins werden auf B Spalte gesetzt, siehe Datenblatt
 	
-	twi_master_options_t opt = {
-		.speed = 100000,
-		.chip  = 0x51
-	};
-	twi_master_setup( TWI2, &opt);
+//	twi_master_options_t opt = {
+//		.speed = 100000,
+//		.chip  = 0x51
+//	};
+//	twi_master_setup( TWI2, &opt);
+	
+	sysclk_enable_peripheral_clock(ID_TWI2);
+	// Disable TWI interrupts
+	TWI2->TWI_IDR = ~0UL;
+	// Dummy read in status register 
+	TWI2->TWI_SR;
+	// Reset TWI peripheral 
+	// Set SWRST bit to reset TWI peripheral 
+	TWI2->TWI_CR = TWI_CR_SWRST;
+	TWI2->TWI_RHR;
+	// Set Master Disable bit and Slave Disable bit 
+	TWI2->TWI_CR = TWI_CR_MSDIS;
+	TWI2->TWI_CR = TWI_CR_SVDIS;
+	// Set Master Enable bit 
+	TWI2->TWI_CR = TWI_CR_MSEN;
+	/* set clock waveform generator register */
+	TWI2->TWI_CWGR = TWI_CWGR_CLDIV(236) | TWI_CWGR_CHDIV(236) | TWI_CWGR_CKDIV(0);
+			
+//	TWI2->TWI_IER = 0x00000001;
+//	NVIC_EnableIRQ(TWI2_IRQn);
 	
 	delay_us(500);
 }
@@ -49,3 +69,4 @@ void portexpander_einlesen(uint8_t x[])
 	tasten[1] = ~daten2;
 	return;
 }
+
