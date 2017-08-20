@@ -16,9 +16,6 @@ extern float notes[88];
 extern uint8_t triangletab[TRITAB];
 extern uint16_t divider[16]; 
 
-extern uint8_t tasten[8];
-
-
 volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
 
 uint32_t wt = 0;
@@ -60,26 +57,16 @@ int main (void)
 	//SPI Init
 	spiInit();
 	
-	for (i=0; i<8; i++)
-	{
-		tasten[i]=0;
-	}
-	
+	//ADC Init
+	adcInit();
+		
 	for (i=0; i<8; i++)
 	{
 		channel[i].oscillator_on = 0;
 		channel[i].releaseActiv = 0;
 	}
 	
-
-	//ADC Init
-	//	pmc_enable_periph_clk(ADC);
-	//	adc_enable();
-	//	adc_get_config_defaults(&adc_cfg);
-	//	adc_init(ADC, &adc_cfg);
-	//	adc_set_trigger(ADC, ADC_TRIG_SW);
-	//	adc_channel_enable(ADC, ADC_CHANNEL_2);
-
+	// Delay Scheduler
 	uint32_t delaytasten = 0;
 	uint32_t delayenv = 0;
 	dac_out = 0;
@@ -88,43 +75,51 @@ int main (void)
 	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
 	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0}; //Standardmodi einstellen
+	for (i=0; i<6; i++)
+	{
+		keys[i]=0;
+	}
 	
 	while(1)
 	{
 		
 		if ((ticks) >= delaytasten+10)
 		{
-			delaytasten = ticks;
-	//	portexpander_einlesen(tasten[0]);	
-	//	print_tasten();
-	//	activateChannel(tasten ,channel, notes, divider);
-	//	envelopChannel(tasten ,channel);
+			delaytasten = ticks;	// New Timer Value
+		//	activateChannel(tasten ,channel, notes, divider);
+		//	envelopChannel(tasten ,channel);
+			
+			// Get the ADC Values, Raw Data 10bit
+			settings.releaseValue = getReleaseValue();
+			settings.sustainValue = getSustainValue();
+			settings.dutyValue = getDutyCycleValue();
+			settings.arpValue = getArpeggioValue();
 		}
 	
 		if ((ticks) >= delayenv+1)
 		{
-			delayenv = ticks;		
-	//		envelopChannel(tasten ,channel);
+			delayenv = ticks;	// New Timer Value
+		//	envelopChannel(tasten ,channel);
 		}
+		
+		// Read all Keys, Write all LED
+		readkeys( keys, &newkeys, &settings); // Programmed as Statemachine
 
 	}
 }
-
-//
-
 
 // Systemtakt 1ms
 void SysTick_Handler(){
 	ticks++;	
 }
 
-
 void print_tasten()
 {
+	uint8_t keys[2];
 	char text[200];
-	sprintf(text,   " Tasten 1: %d  \n", tasten[0]);
+	sprintf(text,   " Tasten 1: %d  \n", keys[0]);
 	uartsendstring(text);
-	sprintf(text,	" Tasten 2: %d  \n\n", tasten[1]);
+	sprintf(text,	" Tasten 2: %d  \n\n", keys[1]);
 	uartsendstring(text);
 	return;
 }

@@ -81,6 +81,7 @@ void timerInit (void){
 void TC0_Handler()
 {
 	static uint32_t test;
+	uint32_t i = 0;
 
 	oscillator(&channel[0]); // Oscillator Channel
 	oscillator(&channel[1]); // Oscillator Channel
@@ -91,12 +92,15 @@ void TC0_Handler()
 	oscillator(&channel[6]); // Oscillator Channel
 	oscillator(&channel[7]); // Oscillator Channel
 	
-	dac_out = channel[0].chan_out/2 + channel[1].chan_out/2; // Accumulate Oscillator
+	dac_out = 0;
+	for (i = 0; i<=7; i++)
+	{
+		dac_out += channel[i].chan_out; // Accumulate Oscillator
+	}
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
 	if (test){}
-
 }
 
 void TC1_Handler()
@@ -136,23 +140,20 @@ void TC1_Handler()
 		dataout = 0;
 	}
 	
-	out = 0x01000000 | 0x00003000 | (dataout & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
+	out = 0x01003000 | (dataout & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
 	SPI->SPI_TDR = 	out;
 	
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[1].TC_SR; 
 	if (test){}
-	
 }
 
 void TC2_Handler()
 {
 	static uint32_t test;
 	// 8 LFSR for Noise Channel
-	PIOA->PIO_CODR =D0;
-
-	noise(&channel[0]);
+//	noise(&channel[0]);
 //	noise(&channel[1]);
 //	noise(&channel[2]);
 //	noise(&channel[3]);
@@ -165,7 +166,6 @@ void TC2_Handler()
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[2].TC_SR;
 	if (test){}
-	PIOA->PIO_SODR = D0;
 }
 
 void oscillator(chan *x){
@@ -362,7 +362,7 @@ void envelopChannel(uint8_t key[] ,chan x[]){
 		keyIndex = x[i].pushed_key / 8;
 		keyInByte = x[i].pushed_key % 8;
 		
-		if ((key[keyIndex] & (1 << (keyInByte-1))) == 0)
+		if ((key[keyIndex] & (1 << (keyInByte-1))) == 0) // If Key released, calculate new step
 		{
 			if (x[i].oscillator_on >= 1) // If Oscillator is On
 			{
@@ -383,7 +383,7 @@ void envelopChannel(uint8_t key[] ,chan x[]){
 	}
 	
 	// Generate ADSR
-	for (i = 0; i<8; i++)
+	for (i = 0; i<8; i++) // 8 Channel
 	{
 		if (x[i].oscillator_on >= 1) // If Oscillator is On
 		{
