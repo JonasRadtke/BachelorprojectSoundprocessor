@@ -1,5 +1,30 @@
 #include "perepherie.h"
 
+void twiInit(){
+	// I2C activate
+	pmc_enable_periph_clk(ID_PIOB);	// Clock auf PIOB
+	pio_set_peripheral 	( PIOB, PIO_PERIPH_B, PIO_PB0 | PIO_PB1 );	// TWI pins aktivieren, Pins werden auf B Spalte gesetzt, siehe Datenblatt
+
+	sysclk_enable_peripheral_clock(ID_TWI2);
+	// Disable TWI interrupts
+	TWI2->TWI_IDR = ~0UL;
+	// Dummy read in status register
+	TWI2->TWI_SR;
+	// Reset TWI peripheral
+	// Set SWRST bit to reset TWI peripheral
+	TWI2->TWI_CR = TWI_CR_SWRST;
+	TWI2->TWI_RHR;
+	// Set Master Disable bit and Slave Disable bit
+	TWI2->TWI_CR = TWI_CR_MSDIS;
+	TWI2->TWI_CR = TWI_CR_SVDIS;
+	// Set Master Enable bit
+	TWI2->TWI_CR = TWI_CR_MSEN;
+	/* set clock waveform generator register */
+	TWI2->TWI_CWGR = TWI_CWGR_CLDIV(236) | TWI_CWGR_CHDIV(236) | TWI_CWGR_CKDIV(0);
+	
+	delay_us(500);
+}
+
 void adcInit(){
 	//ADC Init
 	pmc_enable_periph_clk(ADC);
@@ -10,10 +35,10 @@ void adcInit(){
 	ADC->ADC_EMR &= ~ADC_EMR_OSR_Msk;
 	
 	adc_set_trigger(ADC, ADC_TRIG_SW);
-//	adc_channel_enable(ADC, ADC_CHANNEL_0);
-//	adc_channel_enable(ADC, ADC_CHANNEL_1);
+	adc_channel_enable(ADC, ADC_CHANNEL_0);
+	adc_channel_enable(ADC, ADC_CHANNEL_1);
 	adc_channel_enable(ADC, ADC_CHANNEL_2);
-//	adc_channel_enable(ADC, ADC_CHANNEL_3);
+	adc_channel_enable(ADC, ADC_CHANNEL_3);
 }
 
 
@@ -297,31 +322,30 @@ uint8_t writeLed(Settings* settings)
 
 uint32_t getReleaseValue()
 {
-//	adc_start_software_conversion(ADC);
-//	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_1)));
-//	return adc_channel_get_value(ADC, ADC_CHANNEL_1);
-	return ADC->ADC_CDR[0];
+	adc_start_software_conversion(ADC);
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_0)));
+	return adc_channel_get_value(ADC, ADC_CHANNEL_0);
 }
 
 uint32_t getSustainValue()
+{
+	adc_start_software_conversion(ADC);
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_1)));	//Channel klaeren
+	return adc_channel_get_value(ADC, ADC_CHANNEL_1);
+}
+
+uint32_t getArpeggioValue()
 {
 	adc_start_software_conversion(ADC);
 	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));	//Channel klaeren
 	return adc_channel_get_value(ADC, ADC_CHANNEL_2);
 }
 
-uint32_t getArpeggioValue()
+uint32_t getDutyCycleValue()
 {
 	adc_start_software_conversion(ADC);
 	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_3)));	//Channel klaeren
 	return adc_channel_get_value(ADC, ADC_CHANNEL_3);
-}
-
-uint32_t getDutyCycleVaule()
-{
-	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_4)));	//Channel klaeren
-	return adc_channel_get_value(ADC, ADC_CHANNEL_4);
 }
 
 uint32_t sendPortexpander(Twi *p_twi, twi_packet_t *p_packet){

@@ -11,7 +11,6 @@
 #include <string.h>
 #include <math.h>
 #include "uartt.h"
-#include "portexpander.h"
 #include "oszillatoren.h"
 #include "perepherie.h"
 #include "dac.h"

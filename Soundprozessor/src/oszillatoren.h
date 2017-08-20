@@ -85,28 +85,7 @@ typedef struct chan1 {
 	
 	// Outputs
 	uint8_t chan_out;		// Output of Chanel
-	
-	//struct unpacker		trackup;
-	//u8			tnum;
-	//s8			transp;
-	//u8			tnote;
-	//u8			lastinstr;
-	//u8			inum;
-	//u16			iptr;
-	//u8			iwait;
-	//u8			inote;
-	//s8			bendd;
-	//s16			bend;
-	//s8			volumed;
-	//s16			dutyd;
-	//u8			vdepth;
-	//u8			vrate;
-	//u8			vpos;
-	//s16			inertia;
-	//u16			slur;
 } chan;
-
-
 
 void timerInit (void);
 void oscillator(chan *);
