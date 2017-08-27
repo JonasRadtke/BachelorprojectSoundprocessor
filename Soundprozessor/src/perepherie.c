@@ -282,7 +282,17 @@ uint8_t readSettings(Settings* settingspointer)
 		{
 			newSettings.Release = !newSettings.Release;
 		}
-	
+		
+		if (((~input) & 0x10))
+		{
+			newSettings.waveform = RECTANGLE;
+		}
+		else
+		{
+			newSettings.waveform = TRIANGLE;
+		}
+		
+		
 		//Kompatibilitaet der Modi sichern
 	
 		if(newSettings.arpeggio == 1 && (*settingspointer).arpeggio == 0)		//Fall 1: Arpeggio vorher aus, nachher an --> anhaltenderton aus und halleffekt aus => (Prioritaet bei arpeggio)
@@ -323,8 +333,8 @@ uint8_t writeLed(Settings* settings)
 uint32_t getReleaseValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_0)));
-	return adc_channel_get_value(ADC, ADC_CHANNEL_0);
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_3)));
+	return adc_channel_get_value(ADC, ADC_CHANNEL_3);
 }
 
 uint32_t getSustainValue()
@@ -344,8 +354,8 @@ uint32_t getArpeggioValue()
 uint32_t getDutyCycleValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_3)));	//Channel klaeren
-	return adc_channel_get_value(ADC, ADC_CHANNEL_3);
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_0)));	//Channel klaeren
+	return adc_channel_get_value(ADC, ADC_CHANNEL_0);
 }
 
 uint32_t sendPortexpander(Twi *p_twi, twi_packet_t *p_packet){

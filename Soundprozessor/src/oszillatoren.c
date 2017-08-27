@@ -9,9 +9,10 @@
 
 chan channel[8];
 
-uint32_t sustainVolume = 0xFFFFFFFF/2;
-uint32_t delayzeit = 100;
-uint32_t releasezeit = 100;
+uint32_t sustainVolume = 0xFFFFFFFF;
+uint32_t delayzeit = 33;
+uint32_t releasezeit = 33;
+uint32_t noisezeit = 11;
 uint32_t dataout = 0;
 uint32_t out = 0;
 
@@ -19,14 +20,15 @@ uint32_t out = 0;
 
 float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7080,	  38.8908,	  41.2034,	  43.6535,	  46.2493,	  48.9994, 
 					 51.9130,	  55	 ,    58.2704,	  61.7354,	  65.4063,	  69.2956,	  73.4161,    77.7817,	  82.4068,	  87.3070,	  92.4986,    
-							  97.9988,    103.8261,  110	 ,   116.5409,	 123.4708,	 130.8127,	 138.5913,	 146.8323,	 155.5634,	 164.8137,	 174.6141,	 
-							 184.9972,    195.9977,	 207.6523,	 220	 ,   233.0818,	 246.9416,	 261.6255,	 277.1826,	 293.6647,	 311.1269,	 329.6275,	  
-							 349.2282,	 369.9944,	 391.9954,	 415.3046,	 440	 ,   466.1637,	 493.8833,	 523.2511,	 554.3652,	 587.3295,	 622.2539, 
-							 659.2551,	 698.4564,	 739.9888,	 783.9908,	 830.6093,	 880	 ,   932.3275,	 987.7666,	1046.5022,	1108.7305,	1174.6590,	 
-							 1244.5079,	1318.5102,	1396.9129,  1479.9776,	1567.9817,	1661.2187,	1760	 ,  1864.6550,	1975.5332,	2093.0045,	2217.4610,	 
-							 2349.3181,	2489.0158,	2637.0204,	2793.8258,	2959.9553,	3135.9634,	3322.4375,	3520	 ,  3729.3100,	3951.0664,	4186.0090}; 
-uint8_t triangletab[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32}; // Triangle tab
-uint16_t divider[16] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
+					 97.9988,    103.8261,   110	 ,   116.5409,	 123.4708,	 130.8127,	 138.5913,	 146.8323,	 155.5634,	 164.8137,	 174.6141,	 
+					184.9972,    195.9977,	 207.6523,	 220	 ,   233.0818,	 246.9416,	 261.6255,	 277.1826,	 293.6647,	 311.1269,	 329.6275,	  
+					349.2282,	 369.9944,	 391.9954,	 415.3046,	 440	 ,   466.1637,	 493.8833,	 523.2511,	 554.3652,	 587.3295,	 622.2539, 
+					659.2551,	 698.4564,	 739.9888,	 783.9908,	 830.6093,	 880	 ,   932.3275,	 987.7666,	1046.5022,	1108.7305,	1174.6590,	 
+				   1244.5079,	1318.5102,	1396.9129,  1479.9776,	1567.9817,	1661.2187,	1760	 ,  1864.6550,	1975.5332,	2093.0045,	2217.4610,	 
+				   2349.3181,	2489.0158,	2637.0204,	2793.8258,	2959.9553,	3135.9634,	3322.4375,	3520	 ,  3729.3100,	3951.0664,	4186.0090}; 
+//uint32_t triangletab[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32}; // Triangle tab
+uint32_t triangletab[TRITAB] = {15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15};
+uint32_t divider[16] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
 
 
 
@@ -47,7 +49,7 @@ void timerInit (void){
 	tc_start(TC, 0);					// Timer starten
 	
 	// Timer für
-	sysclk_enable_peripheral_clock(ID_TC1); // Clock auf Timer 0
+/*	sysclk_enable_peripheral_clock(ID_TC1); // Clock auf Timer 0
 	tc_init(TC, 1,
 	TC_CMR_TCCLKS_TIMER_CLOCK1		// Waveform Clock Selection
 	| TC_CMR_WAVE					// Waveform mode
@@ -58,7 +60,7 @@ void timerInit (void){
 	tc_write_rc(TC, 1, rc);				// RC einstellen
 	NVIC_EnableIRQ(TC1_IRQn);			// Interrupt einschalten
 	tc_start(TC, 1);
-
+*/
 	// Timer für NOISE
 	sysclk_enable_peripheral_clock(ID_TC2); // Clock auf Timer 0
 	tc_init(TC, 2,
@@ -98,63 +100,39 @@ void TC0_Handler()
 		dac_out += channel[i].chan_out; // Accumulate Oscillator
 	}
 	
+	dac_out = dac_out;
+	out = 0x01003000 | (dac_out & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
+	SPI->SPI_TDR = 	out;
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
 	if (test){}
 }
 
-void TC1_Handler()
+/*void TC1_Handler()
 {
 	static uint32_t test;
 	uint32_t dac_temp;
-	
-	// Phaseaccu for Triangle Table (DDS)
-	// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
-	// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet.
-	// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
-	channel[0].dds_counter.counter += channel[0].tri_stepsize;
-	channel[1].dds_counter.counter += channel[1].tri_stepsize;
-	channel[2].dds_counter.counter += channel[2].tri_stepsize;
-	channel[3].dds_counter.counter += channel[3].tri_stepsize;
-	channel[4].dds_counter.counter += channel[4].tri_stepsize;
-	channel[5].dds_counter.counter += channel[5].tri_stepsize;
-	channel[6].dds_counter.counter += channel[6].tri_stepsize;
-	channel[7].dds_counter.counter += channel[7].tri_stepsize;
-	
-	// Write DAC
-	dac_temp = 0;
 
-//	PIOA->PIO_SODR = DAC_NWRITE; // Write Befehl zurück nehmen
-
-	dac_temp = (((uint32_t)dac_out) << 5);		// Ausgangsbyte um 5 verschieben PA5
-	dac_temp =	dac_temp | ((((uint32_t)dac_out) >> 2) &  0x00000011);
-	
-//	PIOA->PIO_CODR = 0x00001E63;					// Ausgänge 0 Setzen
-//	PIOA->PIO_SODR = dac_temp & 0x00001E63;		// Neuen Wert setzen, maskiert
-	
-//	PIOA->PIO_CODR = DAC_NWRITE;	// Write Befehl an DAC
-	dataout++;
-	out = 0;
-	if (dataout >= 4096)
-	{
-		dataout = 0;
-	}
-	
-	out = 0x01003000 | (dataout & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
-	SPI->SPI_TDR = 	out;
-	
+//	channel[0].dds_counter.counter += channel[0].tri_stepsize;
+//	channel[1].dds_counter.counter += channel[1].tri_stepsize;
+//	channel[2].dds_counter.counter += channel[2].tri_stepsize;
+//	channel[3].dds_counter.counter += channel[3].tri_stepsize;
+//	channel[4].dds_counter.counter += channel[4].tri_stepsize;
+//	channel[5].dds_counter.counter += channel[5].tri_stepsize;
+//	channel[6].dds_counter.counter += channel[6].tri_stepsize;
+//	channel[7].dds_counter.counter += channel[7].tri_stepsize;
 	
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[1].TC_SR; 
 	if (test){}
 }
-
+*/
 void TC2_Handler()
 {
 	static uint32_t test;
 	// 8 LFSR for Noise Channel
-//	noise(&channel[0]);
-//	noise(&channel[1]);
+	noise(&channel[0]);
+	noise(&channel[1]);
 //	noise(&channel[2]);
 //	noise(&channel[3]);
 //	noise(&channel[4]);
@@ -180,7 +158,7 @@ void oscillator(chan *x){
 			case RECTANGLE:
 				if (x->rect_count <= x->rect_low) // Wenn Dutycycle noch nicht erreicht Rechteck High!
 				{
-					x->chan_out = (uint8_t)(x->envelopeVolume >> 24);
+					x->chan_out = (x->envelopeVolume >> 23);
 				}
 				else
 				{
@@ -194,23 +172,26 @@ void oscillator(chan *x){
 					x->rect_count = 0;
 				}
 			break;
-		
 			//triangle
-			// hier wird der Wert aus der Tabelle ausgegeben. Es wird der Index aus dem obersten Byte des Phasenakkumulators verwendet.
+			// Phaseaccu for Triangle Table (DDS)
+			// Der Phasenakkumulator ist 32 bit, die höchsten 8 bit werden zum springen der Tabelle benutzt, 24bit sind quasi Nachkommastellen.
+			// In einer eigenen ISR, vermutlich 100khz, werden zu den 24bit immer die Stepsize dazu addiert. Diese wird einfach vorberechnet.
+			// Bei jeden Überlauf der 24bit erhöht sich dadurch der Index der Tabelle. 0000 0001 + 24bit. Durch anpassen der Stepsize geschieht dies schneller oder langsamer.
 			case TRIANGLE:
-				if (x->dds_counter.phase > 15)
+				x->dds_counter.counter += x->tri_stepsize;
+				if (x->dds_counter.phase > 31)
 				{
 					x->dds_counter.phase = 0;
 				}
 
-				x->chan_out = triangletab[x->dds_counter.phase];
+				x->chan_out = (uint32_t)((triangletab[x->dds_counter.phase] << 5) * ((float)x->envelopeVolume/0xFFFFFFFF));
 			break;
 		
 			//noise
 			case NOISE:
 				if ((x->noise_lfsr & 0x01) == 1)
 				{
-					x->chan_out = (uint8_t)(x->envelopeVolume >> 24);
+					x->chan_out = 0x3FF;
 				}
 				else
 				{
@@ -248,7 +229,7 @@ void noise(chan *x){
 	}
 }
 
-void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
+void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_t div[]){
 	uint8_t i = 0;
 	uint8_t keyTemp = 0;
 	uint8_t j = 0;
@@ -264,7 +245,7 @@ void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
 		if ( keyTemp > 0) // If Pressed Key in Byte
 		{
 			// Search for pressed Key in 1 Byte
-			for (j=1; j<8; j++)
+			for (j=1; j<=8; j++)
 			{
 				if ( (keyTemp & 0x01) == 1 ) // If Key is pressed
 				{
@@ -276,7 +257,7 @@ void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]){
 					}
 					else if (freeChannel < 100) // If free channel is found
 					{
-						_calculateChannelSettings(x, freeChannel, keyNumberTemp, note, div); // Calculate the Settings for the specific channel
+						_calculateChannelSettings(x,set ,freeChannel, keyNumberTemp, note, div); // Calculate the Settings for the specific channel
 					}
 					else{}
 				}
@@ -310,17 +291,15 @@ int8_t _searchFreeChannel(chan x[], uint8_t key){
 	return 100; // Return no free Channel found
 }
 
-void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]){
-	uint8_t tempWaveform = 1;
-	channel[channelIndex].dutycycle = 50; // MUSS NOCH GEÄNDERT WERDEN
-	
-	
-	
-	switch (tempWaveform){
+void _calculateChannelSettings(chan x[], Settings set ,uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]){
+
+	switch (set.waveform){
 		
 		// Settings for Rectangle Waveform
 		case RECTANGLE:
-		channel[channelIndex].frequency = note[key-1 + 37];
+		
+		channel[channelIndex].dutycycle = set.dutyValue*100 / 1024;
+		channel[channelIndex].frequency = note[key-2 + 29]; // normally +37, but the first key is not used
 		channel[channelIndex].rect_end = SAMPLEFREQ / channel[channelIndex].frequency;
 		channel[channelIndex].rect_low = ((uint32_t)channel[channelIndex].rect_end * channel[channelIndex].dutycycle )/ 100;
 		channel[channelIndex].waveform = RECTANGLE;
@@ -328,8 +307,8 @@ void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, floa
 		
 		// Settings for Triangle Waveform
 		case TRIANGLE:
-		channel[channelIndex].frequency = note[key-1 + 37];
-		channel[channelIndex].tri_stepsize = (BIT24*channel[channelIndex].frequency*TRITAB)/PHASEAKKU_FREQ; //Zaehler für Phasenakkumulator
+		channel[channelIndex].frequency = note[key-2 + 29 ];
+		channel[channelIndex].tri_stepsize = (BIT24*channel[channelIndex].frequency*TRITAB)/SAMPLEFREQ; //Zaehler für Phasenakkumulator
 		channel[channelIndex].waveform = TRIANGLE;
 		break;
 		
@@ -342,17 +321,29 @@ void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, floa
 		default:
 		break;
 	}
+	
+	if (set.burst)
+	{
+		channel[channelIndex].waveform = NOISE;
+		channel[channelIndex].noise_divider = div[2];
+		channel[channelIndex].burstTime = noisezeit;
+	}
+	else
+	{
+		channel[channelIndex].burstTime = 0;
+		channel[channelIndex].noise_divider = div[15];
+	}
 	channel[channelIndex].envelopeVolume = 0xFFFFFFFF; // Preset for envelope Volume
 	channel[channelIndex].delayTime = delayzeit;
 	channel[channelIndex].releaseTime = releasezeit;
 	channel[channelIndex].sustainVol = sustainVolume;
 	channel[channelIndex].envelopeStep = (channel[channelIndex].envelopeVolume-channel[channelIndex].sustainVol) / channel[channelIndex].delayTime;
-	channel[channelIndex].adsrCnt = channel[channelIndex].releaseTime + channel[channelIndex].delayTime;
+	channel[channelIndex].adsrCnt = channel[channelIndex].burstTime+channel[channelIndex].releaseTime + channel[channelIndex].delayTime;
 	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel struct
 	channel[channelIndex].oscillator_on = 1;	
 }
 
-void envelopChannel(uint8_t key[] ,chan x[]){
+void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 	uint8_t i = 0;
 	uint8_t keyInByte = 0;
 	uint8_t keyIndex = 0;
@@ -361,10 +352,15 @@ void envelopChannel(uint8_t key[] ,chan x[]){
 	{
 		keyIndex = x[i].pushed_key / 8;
 		keyInByte = x[i].pushed_key % 8;
+		if (keyInByte == 0)
+		{
+			keyInByte = 8;
+			keyIndex--;
+		}
 		
 		if ((key[keyIndex] & (1 << (keyInByte-1))) == 0) // If Key released, calculate new step
 		{
-			if (x[i].oscillator_on >= 1) // If Oscillator is On
+			if ((x[i].oscillator_on >= 1) & !(x[i].releaseActiv == 1) ) // If Oscillator is On
 			{
 				//x[i].oscillator_on = 0;
 				// If Sustain already active
@@ -375,6 +371,7 @@ void envelopChannel(uint8_t key[] ,chan x[]){
 				else // Sustain not active, release Volume from actual Delay Volume
 				{
 					x[i].envelopeStep = x[i].envelopeVolume / x[i].releaseTime;
+					x[i].adsrCnt = x[i].releaseTime;
 				}
 				x[i].releaseActiv = 1;
 			}
@@ -387,15 +384,21 @@ void envelopChannel(uint8_t key[] ,chan x[]){
 	{
 		if (x[i].oscillator_on >= 1) // If Oscillator is On
 		{
-			if (x[i].adsrCnt >= (x[i].delayTime)) // Delayphase
+			if (x[i].adsrCnt > (x[i].releaseTime + x[i].delayTime))
+			{
+				x[i].adsrCnt--;
+			}
+			else if (x[i].adsrCnt > (x[i].releaseTime)) // Delayphase
 			{
 				x[i].envelopeVolume -= x[i].envelopeStep;
 				x[i].adsrCnt--;
+				x[i].waveform = set.waveform;
 			}
-			else if ((x[i].adsrCnt <= x[i].delayTime) & !x[i].releaseActiv) // Sustainphase (Constant Volume)
+			else if ((x[i].adsrCnt <= x[i].releaseTime) & !x[i].releaseActiv) // Sustainphase (Constant Volume)
 			{
 				x[i].envelopeVolume = x[i].sustainVol;
-				x[i].adsrCnt = x[i].delayTime;
+				x[i].adsrCnt = x[i].releaseTime;
+				x[i].waveform = set.waveform;
 			}
 			else if (x[i].releaseActiv)		// Releasephase
 			{

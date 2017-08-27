@@ -4,22 +4,9 @@
 #include <string.h>
 #include <math.h>
 #include "uartt.h"
+#include "structs.h"
 
 #define twiwaitus			50		// us, Wait for TWI
-
-typedef struct 
-{
-	uint8_t waveform;
-	uint8_t burst;
-	uint8_t arpeggio;
-	uint8_t Release;
-	uint8_t Sustain;
-	uint8_t preinput;
-	uint32_t dutyValue;
-	uint32_t arpValue;
-	uint32_t sustainValue;
-	uint32_t releaseValue;
-} Settings;
 
 void adcInit(void);
 void twiInit(void);

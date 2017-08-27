@@ -5,6 +5,7 @@
  *  Author: Radtke
  */ 
 
+#include "structs.h"
 
 #ifndef OSZILLATOREN_H_
 #define OSZILLATOREN_H_
@@ -15,7 +16,7 @@
 #include <string.h>
 #include <math.h>
 
-#define SAMPLEFREQ			(38000)
+#define SAMPLEFREQ			(60000)
 #define PHASEAKKU_FREQ		(100000)
 #define ENVELOP_TIME		(1)      // in milliseconds
 #define DAC_NWRITE			(PIO_PA4) 
@@ -27,15 +28,13 @@
 #define D5					(PIO_PA10)
 #define D6					(PIO_PA11)
 #define D7					(PIO_PA12)
-#define TRITAB				(16)
+#define TRITAB				(32)
 #define BIT24				(16777216)
 #define LDAC				(PIO_PA12)
 
-#define RECTANGLE			(1)
-#define TRIANGLE			(2)
-#define NOISE				(3)
 
-volatile uint8_t dac_out;
+
+volatile uint32_t dac_out;
 
 union dds_cnt_t{
 	struct{
@@ -65,6 +64,8 @@ typedef struct chan1 {
 	
 	uint32_t releaseActiv;   // Release is Active
 	int32_t releaseTime;	// Length of Release - in milliseconds
+	
+	int32_t burstTime;
 
 	
 	// Waveforms
@@ -84,16 +85,16 @@ typedef struct chan1 {
 	uint32_t noise_metal; // Metallic Noise
 	
 	// Outputs
-	uint8_t chan_out;		// Output of Chanel
+	uint32_t chan_out;		// Output of Chanel
 } chan;
 
 void timerInit (void);
 void oscillator(chan *);
 void noise(chan *);
 
-void activateChannel(uint8_t key[] ,chan x[], float note[], uint16_t div[]);
+void activateChannel(uint8_t key[],Settings ,chan x[], float note[], uint16_t div[]);
 int8_t _searchFreeChannel(chan x[], uint8_t key);
-void _calculateChannelSettings(chan x[], uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
-void envelopChannel(uint8_t key[] ,chan x[]);
+void _calculateChannelSettings(chan x[],Settings, uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
+void envelopChannel(uint8_t key[] ,chan x[], Settings);
 
 #endif /* OSZILLATOREN_H_ */
