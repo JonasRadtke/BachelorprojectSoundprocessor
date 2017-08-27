@@ -16,7 +16,7 @@ extern float notes[88];
 extern uint8_t triangletab[TRITAB];
 extern uint16_t divider[16]; 
 
-volatile uint32_t ticks = 0; // Systemzeit seit Start in Millisekunden
+volatile uint32_t ticks = 0; // Time since Start (ms)
 
 uint32_t wt = 0;
 
@@ -31,12 +31,10 @@ int main (void)
 	SystemCoreClockUpdate();	// Systemclock akualisieren
 	fpu_enable ();				// Floatingpoint Unit aktivieren, Achtung richtige Optimierung einstellen!
 	delay_init(SystemCoreClock);	
-	//SystemCoreClock = 44300000;
 	SysTick_Config(SystemCoreClock / 1000);      /* Configure SysTick to generate an interrupt every millisecond */
 
 	pmc_enable_periph_clk(ID_PIOA);	
 	pmc_enable_periph_clk(ID_PIOB);
-//	pio_set_output 	( 	PIOA, D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | DAC_NWRITE ,LOW,DISABLE,DISABLE); // Setze Ausgänge
 	pio_set_output 	( 	PIOA, LDAC ,LOW,DISABLE,DISABLE); // Setze Ausgänge
 	
 	// Initialize Noise Channel (Seed)

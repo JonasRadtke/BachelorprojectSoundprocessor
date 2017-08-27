@@ -184,7 +184,7 @@ void oscillator(chan *x){
 					x->dds_counter.phase = 0;
 				}
 
-				x->chan_out = (uint32_t)((triangletab[x->dds_counter.phase] << 5) * ((float)x->envelopeVolume/0xFFFFFFFF));
+				x->chan_out = (uint32_t)((triangletab[x->dds_counter.phase] << 5) * (x->envelopeVolume/0xFFFFFFFF));
 			break;
 		
 			//noise
@@ -334,13 +334,13 @@ void _calculateChannelSettings(chan x[], Settings set ,uint8_t channelIndex, uin
 		channel[channelIndex].noise_divider = div[15];
 	}
 	channel[channelIndex].envelopeVolume = 0xFFFFFFFF; // Preset for envelope Volume
-	channel[channelIndex].delayTime = delayzeit;
-	channel[channelIndex].releaseTime = releasezeit;
-	channel[channelIndex].sustainVol = sustainVolume;
+	channel[channelIndex].delayTime = delayzeit;		// HIER NOCH ÄNDERUNG
+	channel[channelIndex].releaseTime = releasezeit;	// HIER NOCH ÄNDERUNG
+	channel[channelIndex].sustainVol = sustainVolume;	// HIER NOCH ÄNDERUNG
 	channel[channelIndex].envelopeStep = (channel[channelIndex].envelopeVolume-channel[channelIndex].sustainVol) / channel[channelIndex].delayTime;
-	channel[channelIndex].adsrCnt = channel[channelIndex].burstTime+channel[channelIndex].releaseTime + channel[channelIndex].delayTime;
+	channel[channelIndex].adsrCnt = channel[channelIndex].burstTime+channel[channelIndex].releaseTime + channel[channelIndex].delayTime; // adsrCnt counts to Zero, Burst -> decay -> release
 	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel struct
-	channel[channelIndex].oscillator_on = 1;	
+	channel[channelIndex].oscillator_on = 1;	// OSC on as last command!
 }
 
 void envelopChannel(uint8_t key[] ,chan x[], Settings set){
@@ -348,11 +348,14 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 	uint8_t keyInByte = 0;
 	uint8_t keyIndex = 0;
 	
+	// Looking for activated Channel
 	for (i = 0; i<8; i++)
 	{
+		// Calculate Position in Key Array
 		keyIndex = x[i].pushed_key / 8;
 		keyInByte = x[i].pushed_key % 8;
-		if (keyInByte == 0)
+		
+		if (keyInByte == 0)	// Fix for Modulo = 0
 		{
 			keyInByte = 8;
 			keyIndex--;
@@ -362,7 +365,6 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 		{
 			if ((x[i].oscillator_on >= 1) & !(x[i].releaseActiv == 1) ) // If Oscillator is On
 			{
-				//x[i].oscillator_on = 0;
 				// If Sustain already active
 				if (x[i].adsrCnt <= x[i].delayTime)
 				{
@@ -374,8 +376,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 					x[i].adsrCnt = x[i].releaseTime;
 				}
 				x[i].releaseActiv = 1;
-			}
-			 
+			} 
 		}
 	}
 	
@@ -384,28 +385,32 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 	{
 		if (x[i].oscillator_on >= 1) // If Oscillator is On
 		{
+			// Burst active
 			if (x[i].adsrCnt > (x[i].releaseTime + x[i].delayTime))
 			{
 				x[i].adsrCnt--;
 			}
+			// Decay active
 			else if (x[i].adsrCnt > (x[i].releaseTime)) // Delayphase
 			{
 				x[i].envelopeVolume -= x[i].envelopeStep;
 				x[i].adsrCnt--;
 				x[i].waveform = set.waveform;
 			}
+			// Sustain active
 			else if ((x[i].adsrCnt <= x[i].releaseTime) & !x[i].releaseActiv) // Sustainphase (Constant Volume)
 			{
 				x[i].envelopeVolume = x[i].sustainVol;
 				x[i].adsrCnt = x[i].releaseTime;
 				x[i].waveform = set.waveform;
 			}
+			// Release active
 			else if (x[i].releaseActiv)		// Releasephase
 			{
 				x[i].adsrCnt--;
 				x[i].envelopeVolume -= x[i].envelopeStep;		
 			}
-		
+			// Counter End
 			if (x[i].adsrCnt <= 0) // End of Tone
 			{
 				x[i].oscillator_on = 0;
