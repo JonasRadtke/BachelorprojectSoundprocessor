@@ -10,9 +10,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include "structs.h"
 #include "uartt.h"
-#include "oszillatoren.h"
 #include "perepherie.h"
 #include "dac.h"
+#include "oszillatoren.h"
 
 void print_tasten(void);
