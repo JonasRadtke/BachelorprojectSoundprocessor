@@ -42,7 +42,7 @@ void adcInit(){
 }
 
 
-void readkeys(uint8_t keys[],uint8_t* newkeys, Settings* settingspointer)
+void readkeys(uint8_t keys[], Settings* settingspointer)
 {
 	uint8_t i=0, j, k, keynumber=0, newkeynumber=0, oldkeynumber=0, notkeynumbermax=1, notoldkey, input, multiplex, oldkeys[8];
 	static uint32_t twiStep;

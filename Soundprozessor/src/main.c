@@ -11,10 +11,11 @@
 
 // Externe Globale Variablen
 extern chan channel[8];
+extern noiseChan singleNoise;
 
 extern float notes[88];
-extern uint8_t triangletab[TRITAB];
-extern uint16_t divider[16]; 
+extern uint32_t triangletab[TRITAB];
+extern uint32_t divider[16]; 
 
 volatile uint32_t ticks = 0; // Time since Start (ms)
 
@@ -42,6 +43,8 @@ int main (void)
 	for(i=0; i<8; i++){
 		channel[i].noise_lfsr = 1;
 	}
+	singleNoise.noise_divider = divider[1-1]; // Noise Divider
+	singleNoise.noise_lfsr = 1; // Noise Seed
 	
 	// Timer initalisieren! 
 	timerInit();
@@ -64,14 +67,12 @@ int main (void)
 		channel[i].releaseActiv = 0;
 		channel[i].noise_divider = divider[15];
 	}
+
 	
 	// Delay Scheduler
 	uint32_t delaytasten = 0;
 	uint32_t delayenv = 0;
-	dac_out = 0;
 	
-
-	uint8_t newkeys[8] = {};	//Array für die Nummern der neu gedrückten Tasten
 	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0, .dutyValue = 512,}; //Standardmodi einstellen
 	for (i=0; i<6; i++)
@@ -102,7 +103,7 @@ int main (void)
 		}
 		
 		// Read all Keys, Write all LED
-		readkeys( keys, &newkeys, &settings); // Programmed as Statemachine
+		readkeys( keys, &settings); // Programmed as Statemachine
 
 	}
 }

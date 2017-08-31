@@ -8,13 +8,12 @@
 #include "oszillatoren.h"
 
 chan channel[8];
+noiseChan singleNoise;
 
-uint32_t sustainVolume = 0xFFFFFFFF;
-uint32_t delayzeit = 33;
-uint32_t releasezeit = 33;
-uint32_t noisezeit = 11;
-uint32_t dataout = 0;
-uint32_t out = 0;
+uint32_t sustainVolume = 0x0000FFFF/2;
+uint32_t delayzeit = 33;  // HIER NUR PROVOSIRSCH
+uint32_t releasezeit = 33; // HIER NUR PROVOSIRSCH
+uint32_t noisezeit = 11; // HIER NUR PROVOSIRSCH
 
 
 
@@ -28,7 +27,7 @@ float notes[88] = {  27.5000,	  29.1352,	  30.8677,	  32.7031,	  34.6478,	  36.7
 				   2349.3181,	2489.0158,	2637.0204,	2793.8258,	2959.9553,	3135.9634,	3322.4375,	3520	 ,  3729.3100,	3951.0664,	4186.0090}; 
 //uint32_t triangletab[TRITAB] = { 0 , 32 , 64 , 96 , 128 , 160 , 192 , 224, 255 , 224 , 192 , 160 , 128 , 96 , 64 , 32}; // Triangle tab
 uint32_t triangletab[TRITAB] = {15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15};
-uint32_t divider[16] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
+uint32_t divider[] = { 1, 2, 4, 8, 16, 24, 32, 40, 50, 63, 95, 127, 190, 254, 508, 1017 }; // Divider for the Noise LFSR
 
 
 
@@ -69,7 +68,7 @@ void timerInit (void){
 	| TC_CMR_WAVSEL_UP_RC			// Bei RC zurücksetzen
 	);
 	tc_enable_interrupt(TC, 2, TC_IER_CPCS); // Compare RC Interrupt einschalten
-	rc = (SystemCoreClock /2 /223721);	//
+	rc = (SystemCoreClock /2 /NOISEFREQ);	//
 	tc_write_rc(TC, 2, rc);				// RC einstellen
 	NVIC_EnableIRQ(TC2_IRQn);			// Interrupt einschalten
 	tc_start(TC, 2);
@@ -83,7 +82,8 @@ void timerInit (void){
 void TC0_Handler()
 {
 	static uint32_t test;
-	uint32_t i = 0;
+	uint32_t dac_out;
+	uint32_t i;
 
 	oscillator(&channel[0]); // Oscillator Channel
 	oscillator(&channel[1]); // Oscillator Channel
@@ -100,9 +100,8 @@ void TC0_Handler()
 		dac_out += channel[i].chan_out; // Accumulate Oscillator
 	}
 	
-	dac_out = dac_out;
-	out = 0x01003000 | (dac_out & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
-	SPI->SPI_TDR = 	out;
+	dac_out = 0x01003000 | (dac_out & 0x00000FFF);//0x00003000 | (0x00000FFF & 0x000000AA); // 0x00010000 // Chip Select 1 0x00003000 // DACA , unbuffered, Gain 1x, SHDN 1
+	SPI->SPI_TDR = 	dac_out;
 	// Timer Statusregister lesen, muss gemacht werden, keine Ahnung wieso
 	test = TC->TC_CHANNEL[0].TC_SR;
 	if (test){}
@@ -131,8 +130,8 @@ void TC2_Handler()
 {
 	static uint32_t test;
 	// 8 LFSR for Noise Channel
-	noise(&channel[0]);
-	noise(&channel[1]);
+	noise(channel, &singleNoise);
+//	noise(&channel[1]);
 //	noise(&channel[2]);
 //	noise(&channel[3]);
 //	noise(&channel[4]);
@@ -158,7 +157,7 @@ void oscillator(chan *x){
 			case RECTANGLE:
 				if (x->rect_count <= x->rect_low) // Wenn Dutycycle noch nicht erreicht Rechteck High!
 				{
-					x->chan_out = (x->envelopeVolume >> 23);
+					x->chan_out = (x->envelopeVolume >> 7);
 				}
 				else
 				{
@@ -184,7 +183,7 @@ void oscillator(chan *x){
 					x->dds_counter.phase = 0;
 				}
 
-				x->chan_out = (uint32_t)((triangletab[x->dds_counter.phase] << 5) * (x->envelopeVolume/0xFFFFFFFF));
+				x->chan_out = (((uint32_t)((triangletab[x->dds_counter.phase] << 6)) * x->envelopeVolume)/0x0000FFFF);
 			break;
 		
 			//noise
@@ -211,22 +210,37 @@ void oscillator(chan *x){
 }
 
 
-void noise(chan *x){
-	x->noise_cnt++;
-	if (x->noise_cnt >= x->noise_divider)
+void noise(chan x[], noiseChan *y){
+	y->noise_cnt++;
+	if (y->noise_cnt >= y->noise_divider)
 	{
-		x->noise_cnt = 0;
+		y->noise_cnt = 0;
 		// Hier LFSR weiter tüdeln
-		if ((x->noise_metal) >= 1)
+		if ((y->noise_metal) >= 1)
 		{
-			x->noise_bit  = ((x->noise_lfsr >> 0) ^ (x->noise_lfsr >> 6)) & 1; // 0 Bit Mit dem 6 Bit XOR ( Metallischer Klang )
+			y->noise_bit  = ((y->noise_lfsr >> 0) ^ (y->noise_lfsr >> 6)) & 1; // 0 Bit XOR 6 Bit ( Metallic Noise )
 		}
 		else
 		{
-			x->noise_bit  = ((x->noise_lfsr >> 0) ^ (x->noise_lfsr >> 1)) & 1;	// 0 bit mit 1 bit XOR ( Normales Rauschen )
+			y->noise_bit  = ((y->noise_lfsr >> 0) ^ (y->noise_lfsr >> 1)) & 1;	// 0 bit XOR 1 bit ( Normal Noise )
 		}
-		x->noise_lfsr =  (x->noise_lfsr >> 1) | (x->noise_bit << 14);	// Rechts schieben und vorne das Ergebnis einfügen
+		if (y->noise_bit)
+		{
+			y->noise_lfsr =  (y->noise_lfsr >> 1) | 0x20000; // Faster than shift 14 times left
+		}
+		else
+		{
+			y->noise_lfsr =  (y->noise_lfsr >> 1);
+		}
+	//	y->noise_lfsr =  (y->noise_lfsr >> 1) | (y->noise_bit << 14);	// Little bit slower than if else 
 	}
+	
+	uint32_t i;
+	for (i=0; i<7; i++)
+	{
+		x[i].noise_lfsr = y->noise_lfsr; // Copy General Noise in every Channel (Necessary in this Project, in further projects not used)
+	}
+	
 }
 
 void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_t div[]){
@@ -333,7 +347,7 @@ void _calculateChannelSettings(chan x[], Settings set ,uint8_t channelIndex, uin
 		channel[channelIndex].burstTime = 0;
 		channel[channelIndex].noise_divider = div[15];
 	}
-	channel[channelIndex].envelopeVolume = 0xFFFFFFFF; // Preset for envelope Volume
+	channel[channelIndex].envelopeVolume = 0x0000FFFF; // Preset for envelope Volume
 	channel[channelIndex].delayTime = delayzeit;		// HIER NOCH ÄNDERUNG
 	channel[channelIndex].releaseTime = releasezeit;	// HIER NOCH ÄNDERUNG
 	channel[channelIndex].sustainVol = sustainVolume;	// HIER NOCH ÄNDERUNG

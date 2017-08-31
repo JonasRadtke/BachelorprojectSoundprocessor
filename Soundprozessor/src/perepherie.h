@@ -11,7 +11,7 @@
 void adcInit(void);
 void twiInit(void);
 
-void readkeys(uint8_t*,uint8_t*,Settings*);
+void readkeys(uint8_t*,Settings*);
 uint8_t readSettings(Settings*);
 uint8_t writeLed(Settings*);
 
