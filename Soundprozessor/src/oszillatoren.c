@@ -243,13 +243,15 @@ void noise(chan x[], noiseChan *y){
 	
 }
 
-void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_t div[]){
+void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_t div[], uint8_t arpegNotes[]){
 	uint8_t i = 0;
 	uint8_t keyTemp = 0;
 	uint8_t j = 0;
 	uint8_t keyNumberTemp = 0;
 	int8_t freeChannel = 0;
 	
+	uint8_t arpegcounter=0;
+	static uint8_t arpegplaycounter;
 	
 	// Search for pressed Key
 	for (i = 0; i<6; i++)
@@ -263,23 +265,57 @@ void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_
 			{
 				if ( (keyTemp & 0x01) == 1 ) // If Key is pressed
 				{
+					
 					keyNumberTemp = i*8 + j;	// Calculate Key Number
 					freeChannel = _searchFreeChannel(x, keyNumberTemp);	// looking for free channel
-					if (freeChannel == 100)	// If no Channel ist free, return
+
+					if(set.arpeggio == 0)
 					{
-						return;
+							
+						if (freeChannel == 100)	// If no Channel is free, return
+						{
+							return;
+						}
+						else if (freeChannel < 100) // If free channel is found
+						{
+							_calculateChannelSettings(x,set ,freeChannel, keyNumberTemp, note, div); // Calculate the Settings for the specific channel
+						}
+						else{}
+					
 					}
-					else if (freeChannel < 100) // If free channel is found
+					else
 					{
-						_calculateChannelSettings(x,set ,freeChannel, keyNumberTemp, note, div); // Calculate the Settings for the specific channel
+						if(arpegNotes[arpegcounter] != keyNumberTemp)
+						{
+							sortInArpegNote(arpegNotes,keyNumberTemp,arpegcounter);
+							x[0].oscillator_on=0;
+							arpegplaycounter=0;
+						}
+						else{}
+						
+						arpegcounter++;
+						
 					}
-					else{}
 				}
 			keyTemp = keyTemp >> 1; // Shift left, next key
 			}
 		}
 	}
-	
+
+	if(set.arpeggio==1 && x[0].oscillator_on==0)
+	{
+		_calculateChannelSettings(x,set ,0, arpegNotes[arpegplaycounter], note, div);
+		
+		if(arpegplaycounter<arpegcounter)
+		{
+			arpegplaycounter++;
+		}
+		else
+		{
+			arpegplaycounter=0;
+		}
+	}
+
 }
 
 int8_t _searchFreeChannel(chan x[], uint8_t key){
@@ -434,6 +470,32 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 				x[i].chan_out = 0;
 			}
 		}	
+	}
+	
+}
+
+uint8_t sortInArpegNote(uint8_t arpegNotes[], uint8_t newkey, uint8_t position)
+{
+	uint8_t i=0;
+	uint8_t keytemp1,keytemp2;
+	
+	if(arpegNotes[position]>newkey)
+	{
+		
+		keytemp1=arpegNotes[position];
+		arpegNotes[position]=newkey:
+		
+			while(arpegNotes[position+i]>0)
+			{
+				keytemp2=arpegNotes[position+i+1];
+				arpegNotes[position+i+1]=keytemp1;
+				keytemp1=keytemp2;
+			}
+	
+		}
+	else
+	{
+		arpegNotes[position]=newkey;
 	}
 	
 }

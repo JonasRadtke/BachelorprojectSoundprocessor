@@ -262,7 +262,8 @@ uint8_t readSettings(Settings* settingspointer)
 		
 	if (receivePortexpander(TWI2, &settings_I2C) == 1)
 	{
-		//Aufgrund der Eingabe sich ergebenede Modi in "newSettings" speichern
+		//Aufgrund der Eingabe sich ergebene
+		de Modi in "newSettings" speichern
 		if((~input & newSettings.preinput) & 0x1)
 		{
 			newSettings.Sustain = !newSettings.Sustain;
@@ -340,21 +341,21 @@ uint32_t getReleaseValue()
 uint32_t getSustainValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_1)));	//Channel klaeren
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_1)));
 	return adc_channel_get_value(ADC, ADC_CHANNEL_1);
 }
 
 uint32_t getArpeggioValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));	//Channel klaeren
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_2)));
 	return adc_channel_get_value(ADC, ADC_CHANNEL_2);
 }
 
 uint32_t getDutyCycleValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_0)));	//Channel klaeren
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_0)));	
 	return adc_channel_get_value(ADC, ADC_CHANNEL_0);
 }
 
