@@ -73,7 +73,7 @@ int main (void)
 	uint32_t delaytasten = 0;
 	uint32_t delayenv = 0;
 	
-	uint8_t keys[8] = {0};		//Array für die Nummern der gedrückten tasten
+	uint8_t keys[6];	//Array für die Nummern der gedrückten tasten
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0, .dutyValue = 512,}; //Standardmodi einstellen
 	for (i=0; i<6; i++)
 	{
