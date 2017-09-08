@@ -11,7 +11,7 @@ chan channel[8];
 noiseChan singleNoise;
 
 //uint32_t sustainVolume = 0x0000FFFF/2;
-uint32_t delayzeit = 33;  // HIER NUR PROVOSIRSCH
+uint32_t delayzeit = 70;  // HIER NUR PROVOSIRSCH
 //uint32_t releasezeit = 33; // HIER NUR PROVOSIRSCH
 uint32_t noisezeit = 11; // HIER NUR PROVOSIRSCH
 
@@ -269,7 +269,7 @@ void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_
 					keyNumberTemp = i*8 + j;	// Calculate Key Number
 					freeChannel = _searchFreeChannel(x, keyNumberTemp);	// looking for free channel
 
-					if(set.arpeggio == 0)
+					if(!set.arpeggio)
 					{
 							
 						if (freeChannel == 100)	// If no Channel is free, return
@@ -302,12 +302,13 @@ void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_
 		}
 	}
 
-	if(set.arpeggio==1 && x[0].oscillator_on==0)
+	if(set.arpeggio && x[0].oscillator_on==0)
 	{
-		_calculateChannelSettings(x,set ,0, arpegNotes[arpegplaycounter], note, div);
+		
 		
 		if(arpegplaycounter<arpegcounter)
 		{
+			_calculateChannelSettings(x,set ,0, arpegNotes[arpegplaycounter], note, div);
 			arpegplaycounter++;
 		}
 		else
@@ -389,14 +390,29 @@ void _calculateChannelSettings(chan x[], Settings set ,uint8_t channelIndex, uin
 	if(set.arpeggio==0)
 	{
 		channel[channelIndex].delayTime = delayzeit;		// HIER NOCH ÄNDERUNG
-		channel[channelIndex].releaseTime = set.releaseValue;	// HIER NOCH ÄNDERUNG
-		channel[channelIndex].sustainVol = set.sustainValue;	// HIER NOCH ÄNDERUNG
+		if(set.Release)
+		{
+			channel[channelIndex].releaseTime = 300+set.releaseValue;
+		}
+		else
+		{
+			channel[channelIndex].releaseTime = 1;	
+		}
+		
+		if(set.Sustain)
+		{
+			channel[channelIndex].sustainVol = set.sustainValue*15+15000;
+		}
+		else
+		{
+			channel[channelIndex].sustainVol = 0x0000FFFF/2;
+		}
 		channel[channelIndex].envelopeStep = (channel[channelIndex].envelopeVolume-channel[channelIndex].sustainVol) / channel[channelIndex].delayTime;
 		channel[channelIndex].adsrCnt = channel[channelIndex].burstTime+channel[channelIndex].releaseTime + channel[channelIndex].delayTime; // adsrCnt counts to Zero, Burst -> decay -> release
 	}
 	else
 	{
-		channel[channelIndex].adsrCnt = set.arpValue*2 + 200;		//Set Timelength oof a single Arpeggio note
+		channel[channelIndex].adsrCnt = set.arpValue/10 + 20;		//Set Timelength oof a single Arpeggio note
 	}
 	
 	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel struct
@@ -416,7 +432,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 			if (x[i].oscillator_on == 1)	//Deactivate every channel that is not used for Arpeggio
 			{
 				x[i].oscillator_on = 0;
-				x[i].releaseActiv = 0;
+				x[i].releaseActive = 0;
 				x[i].pushed_key = 0;
 				x[i].waveform = 0;
 				x[i].chan_out = 0;
@@ -426,7 +442,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 		if(x[0].adsrCnt<=0) 
 		{
 			x[0].oscillator_on = 0;
-			x[0].releaseActiv = 0;
+			x[0].releaseActive = 0;
 			x[0].pushed_key = 0;
 			x[0].waveform = 0;
 			x[0].chan_out = 0;
@@ -457,7 +473,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 		
 		if ((key[keyIndex] & (1 << (keyInByte-1))) == 0) // If Key released, calculate new step
 		{
-			if ((x[i].oscillator_on >= 1) & !(x[i].releaseActiv == 1) ) // If Oscillator is On
+			if ((x[i].oscillator_on >= 1) & !(x[i].releaseActive == 1) ) // If Oscillator is On
 			{
 				// If Sustain already active
 				if (x[i].adsrCnt <= x[i].delayTime)
@@ -469,7 +485,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 					x[i].envelopeStep = x[i].envelopeVolume / x[i].releaseTime;
 					x[i].adsrCnt = x[i].releaseTime;
 				}
-				x[i].releaseActiv = 1;
+				x[i].releaseActive = 1;
 			}
 		}
 	}	
@@ -493,14 +509,14 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 				x[i].waveform = set.waveform;
 			}
 			// Sustain active
-			else if ((x[i].adsrCnt <= x[i].releaseTime) & !x[i].releaseActiv) // Sustainphase (Constant Volume)
+			else if ((x[i].adsrCnt <= x[i].releaseTime) & !x[i].releaseActive) // Sustainphase (Constant Volume)
 			{
 				x[i].envelopeVolume = x[i].sustainVol;
 				x[i].adsrCnt = x[i].releaseTime;
 				x[i].waveform = set.waveform;
 			}
 			// Release active
-			else if (x[i].releaseActiv)		// Releasephase
+			else if (x[i].releaseActive)		// Releasephase
 			{
 				x[i].adsrCnt--;
 				x[i].envelopeVolume -= x[i].envelopeStep;		
@@ -509,7 +525,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 			if (x[i].adsrCnt <= 0) // End of Tone
 			{
 				x[i].oscillator_on = 0;
-				x[i].releaseActiv = 0;
+				x[i].releaseActive = 0;
 				x[i].pushed_key = 0;
 				x[i].waveform = 0;
 				x[i].chan_out = 0;
@@ -530,13 +546,14 @@ void sortInArpegNote(uint8_t arpegNotes[], uint8_t newkey, uint8_t position)
 	{
 		
 		keytemp1=arpegNotes[position];
-		arpegNotes[position]=newkey:
+		arpegNotes[position]=newkey;
 		
 			while(arpegNotes[position+i]>0)
 			{
 				keytemp2=arpegNotes[position+i+1];
 				arpegNotes[position+i+1]=keytemp1;
 				keytemp1=keytemp2;
+				i++;
 			}
 	
 		}

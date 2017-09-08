@@ -262,24 +262,23 @@ uint8_t readSettings(Settings* settingspointer)
 		
 	if (receivePortexpander(TWI2, &settings_I2C) == 1)
 	{
-		//Aufgrund der Eingabe sich ergebene
-		de Modi in "newSettings" speichern
-		if((~input & newSettings.preinput) & 0x1)
+		//Aufgrund der Eingabe sich ergebende Modi in "newSettings" speichern
+		if((~input & newSettings.preinput) & 0x4)
 		{
 			newSettings.Sustain = !newSettings.Sustain;
 		}
 	
-		if((~input & newSettings.preinput) & 0x2)
+		if((~input & newSettings.preinput) & 0x8)
 		{
 			newSettings.arpeggio = !newSettings.arpeggio;
 		}
 	
-		if((~input & newSettings.preinput) & 0x4)
+		if((~input & newSettings.preinput) & 0x1)
 		{
 			newSettings.burst = !newSettings.burst;
 		}
 	
-		if((~input & newSettings.preinput) & 0x8)
+		if((~input & newSettings.preinput) & 0x2)
 		{
 			newSettings.Release = !newSettings.Release;
 		}
@@ -300,9 +299,10 @@ uint8_t readSettings(Settings* settingspointer)
 		{
 			newSettings.Sustain = 0;
 			newSettings.Release = 0;
+			newSettings.burst = 0;
 		}
 	
-		if(newSettings.arpeggio == 1 && (newSettings.Sustain == 1 || newSettings.Release == 1))		//Fall 2: Fall 1 nicht eingetreten und Arpeggio nachher an und anhaltenderton oder halleffekt nachher an --> arpeggio aus 
+		if(newSettings.arpeggio == 1 && (newSettings.Sustain == 1 || newSettings.Release == 1 || newSettings.burst == 1))		//Fall 2: Fall 1 nicht eingetreten und Arpeggio nachher an und anhaltenderton oder halleffekt nachher an --> arpeggio aus 
 		{
 			newSettings.arpeggio = 0;
 		}
@@ -316,7 +316,7 @@ uint8_t readSettings(Settings* settingspointer)
 
 uint8_t writeLed(Settings* settings)
 {
-	uint8_t output = ~((settings->Sustain & 0x01) | ((settings->arpeggio & 0x01) << 1) | ((settings->burst & 0x01) << 2) | ((settings->Release & 0x01) << 3));
+	uint8_t output = ~((settings->burst & 0x01) | ((settings->Release & 0x01) << 1) | ((settings->Sustain & 0x01) << 2) | ((settings->arpeggio & 0x01) << 3));
 	
 	twi_package_t writeled =	{
 		.addr			= 0x00,		
@@ -334,15 +334,15 @@ uint8_t writeLed(Settings* settings)
 uint32_t getReleaseValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_3)));
-	return adc_channel_get_value(ADC, ADC_CHANNEL_3);
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_1)));
+	return adc_channel_get_value(ADC, ADC_CHANNEL_1);
 }
 
 uint32_t getSustainValue()
 {
 	adc_start_software_conversion(ADC);
-	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_1)));
-	return adc_channel_get_value(ADC, ADC_CHANNEL_1);
+	while (!(adc_get_interrupt_status(ADC) & (1 << ADC_CHANNEL_3)));
+	return adc_channel_get_value(ADC, ADC_CHANNEL_3);
 }
 
 uint32_t getArpeggioValue()

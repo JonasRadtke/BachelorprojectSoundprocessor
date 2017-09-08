@@ -64,7 +64,7 @@ int main (void)
 	for (i=0; i<8; i++)
 	{
 		channel[i].oscillator_on = 0;
-		channel[i].releaseActiv = 0;
+		channel[i].releaseActive = 0;
 		channel[i].noise_divider = divider[15];
 	}
 
@@ -74,10 +74,16 @@ int main (void)
 	uint32_t delayenv = 0;
 	
 	uint8_t keys[6];	//Array für die Nummern der gedrückten tasten
+	uint8_t arpegNotes[50];
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0, .dutyValue = 512,}; //Standardmodi einstellen
 	for (i=0; i<6; i++)
 	{
 		keys[i]=0;
+	}
+	
+	for (i=0; i<50; i++)
+	{
+		arpegNotes[i]=0;
 	}
 	
 	while(1)
@@ -86,7 +92,7 @@ int main (void)
 		if ((ticks) >= delaytasten+10)
 		{
 			delaytasten = ticks;	// New Timer Value
-			activateChannel(keys,settings ,channel, notes, divider);
+			activateChannel(keys,settings ,channel, notes, divider,arpegNotes);
 		//	envelopChannel(tasten ,channel);
 			
 			// Get the ADC Values, Raw Data 10bit
