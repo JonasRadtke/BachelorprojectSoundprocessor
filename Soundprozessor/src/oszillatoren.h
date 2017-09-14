@@ -59,9 +59,8 @@ typedef struct chan1 {
 	int32_t delayTime;		// Length of Delay - in milliseconds
 	
 	uint32_t sustainVol;	// Sustain Volume (constant)
-	int32_t arpegSustainTime; //Sustaintime for Arpeggiator
 	
-	uint32_t releaseActive;   // Release is Active
+	uint32_t releaseActiv;   // Release is Active
 	int32_t releaseTime;	// Length of Release - in milliseconds
 	
 	int32_t burstTime;
@@ -100,10 +99,9 @@ void timerInit (void);
 void oscillator(chan *);
 void noise(chan [], noiseChan *);
 
-void activateChannel(uint8_t key[],Settings set,chan x[], float note[], uint16_t div[],uint8_t arpegNotes[]);
+void activateChannel(uint8_t key[],Settings ,chan x[], float note[], uint16_t div[]);
 int8_t _searchFreeChannel(chan x[], uint8_t key);
 void _calculateChannelSettings(chan x[],Settings, uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
 void envelopChannel(uint8_t key[] ,chan x[], Settings);
-void sortInArpegNote(uint8_t*,uint8_t,uint8_t);
 
 #endif /* OSZILLATOREN_H_ */
