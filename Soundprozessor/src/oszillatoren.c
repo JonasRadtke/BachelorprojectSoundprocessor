@@ -11,7 +11,7 @@ chan channel[8];
 noiseChan singleNoise;
 
 //uint32_t sustainVolume = 0x0000FFFF/2;
-uint32_t delayzeit = 70;  // HIER NUR PROVOSIRSCH
+uint32_t delayzeit = 50;  // HIER NUR PROVOSIRSCH
 //uint32_t releasezeit = 33; // HIER NUR PROVOSIRSCH
 uint32_t noisezeit = 11; // HIER NUR PROVOSIRSCH
 
@@ -396,7 +396,7 @@ void _calculateChannelSettings(chan x[], Settings set ,uint8_t channelIndex, uin
 		}
 		else
 		{
-			channel[channelIndex].releaseTime = 1;	
+			channel[channelIndex].releaseTime = 50;	
 		}
 		
 		if(set.Sustain)
