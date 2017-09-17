@@ -54,17 +54,30 @@ typedef struct chan1 {
 	// Envelope
 	uint32_t envelopeVolume;	// Actual Volume
 	uint32_t envelopeStep;
+	uint32_t envelopeStepAttack;
+	
 	int32_t adsrCnt;			// Counter for Attack,Delay,Sustain,Release - in milliseconds, counts to zero
 	
 	int32_t delayTime;		// Length of Delay - in milliseconds
 	
 	uint32_t sustainVol;	// Sustain Volume (constant)
+	int32_t arpegSustainTime; //Sustaintime for Arpeggiator
 	
-	uint32_t releaseActiv;   // Release is Active
+	uint32_t releaseActive;   // Release is Active
 	int32_t releaseTime;	// Length of Release - in milliseconds
 	
 	int32_t burstTime;
-
+	
+	int32_t attackTime;
+	
+	uint8_t arpegNotes[50];
+	uint8_t arpegNoteNumber;
+	uint8_t arpegPlayCounter;
+	uint8_t arpegModeActive;
+	uint8_t loadNextNote;
+	uint8_t arpegAttackActive;
+	uint8_t arpegReleaseActive;
+	int32_t sustainTime;
 	
 	// Waveforms
 	uint32_t dutycycle;		    // Duty Cycle in percent 0-100%
@@ -99,9 +112,11 @@ void timerInit (void);
 void oscillator(chan *);
 void noise(chan [], noiseChan *);
 
-void activateChannel(uint8_t key[],Settings ,chan x[], float note[], uint16_t div[]);
+void activateChannel(uint8_t key[],Settings set,chan x[], float note[], uint16_t div[]);
 int8_t _searchFreeChannel(chan x[], uint8_t key);
 void _calculateChannelSettings(chan x[],Settings, uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
 void envelopChannel(uint8_t key[] ,chan x[], Settings);
+void sortInArpegNote(uint8_t*,uint8_t,uint8_t);
+void arpeggiator(chan channel[],Settings settings);
 
 #endif /* OSZILLATOREN_H_ */
