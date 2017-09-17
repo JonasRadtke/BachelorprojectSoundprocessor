@@ -70,7 +70,13 @@ typedef struct chan1 {
 	
 	int32_t attackTime;
 	
+	uint8_t arpegNotes[50];
+	uint8_t arpegNoteNumber;
+	uint8_t arpegPlayCounter;
 	uint8_t arpegModeActive;
+	uint8_t loadNextNote;
+	uint8_t arpegAttackActive;
+	uint8_t arpegReleaseActive;
 	int32_t sustainTime;
 	
 	// Waveforms
@@ -106,10 +112,11 @@ void timerInit (void);
 void oscillator(chan *);
 void noise(chan [], noiseChan *);
 
-void activateChannel(uint8_t key[],Settings set,chan x[], float note[], uint16_t div[],uint8_t arpegNotes[],uint8_t* arpegNoteNumber);
+void activateChannel(uint8_t key[],Settings set,chan x[], float note[], uint16_t div[]);
 int8_t _searchFreeChannel(chan x[], uint8_t key);
 void _calculateChannelSettings(chan x[],Settings, uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
 void envelopChannel(uint8_t key[] ,chan x[], Settings);
 void sortInArpegNote(uint8_t*,uint8_t,uint8_t);
+void arpeggiator(chan channel[],Settings settings);
 
 #endif /* OSZILLATOREN_H_ */

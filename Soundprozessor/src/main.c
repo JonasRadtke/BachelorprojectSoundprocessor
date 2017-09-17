@@ -39,7 +39,7 @@ int main (void)
 	pio_set_output 	( 	PIOA, LDAC ,LOW,DISABLE,DISABLE); // Setze Ausgänge
 	
 	// Initialize Noise Channel (Seed)
-	uint8_t i;
+	uint8_t i,j;
 	for(i=0; i<8; i++){
 		channel[i].noise_lfsr = 1;
 	}
@@ -66,6 +66,18 @@ int main (void)
 		channel[i].oscillator_on = 0;
 		channel[i].releaseActive = 0;
 		channel[i].noise_divider = divider[15];
+		
+		for (j=0; j<50; j++)
+		{
+			channel[i].arpegNotes[j]=0;
+		}
+		
+		channel[i].arpegNoteNumber=0;
+		channel[i].arpegPlayCounter=0;
+		channel[i].arpegModeActive=0;
+		channel[i].loadNextNote=1;
+		channel[i].arpegAttackActive=1;
+		channel[i].arpegReleaseActive=0;
 	}
 
 	
@@ -74,7 +86,6 @@ int main (void)
 	uint32_t delayenv = 0;
 	
 	uint8_t keys[6];	//Array für die Nummern der gedrückten tasten
-	uint8_t arpegNotes[50], arpegplaycounter=0, arpegNoteNumber=0;
 	Settings settings ={.Sustain=0,.arpeggio=0,.burst=0,.Release=0,.waveform=0, .dutyValue = 512,}; //Standardmodi einstellen
 		
 	for (i=0; i<6; i++)
@@ -82,10 +93,7 @@ int main (void)
 		keys[i]=0;
 	}
 	
-	for (i=0; i<50; i++)
-	{
-		arpegNotes[i]=0;
-	}
+	
 	
 	while(1)
 	{
@@ -93,7 +101,7 @@ int main (void)
 		if ((ticks) >= delaytasten+10)
 		{
 			delaytasten = ticks;	// New Timer Value
-			activateChannel(keys,settings ,channel, notes, divider,arpegNotes,&arpegNoteNumber);
+			activateChannel(keys,settings ,channel, notes, divider);
 		//	envelopChannel(tasten ,channel);
 			
 			// Get the ADC Values, Raw Data 10bit
@@ -106,20 +114,8 @@ int main (void)
 		if ((ticks) >= delayenv+1)
 		{
 			
-			if(settings.arpeggio && channel[0].oscillator_on==0)
-			{
-		
-				if(arpegplaycounter<arpegNoteNumber)
-				{
-					_calculateChannelSettings(channel,settings,0,arpegNotes[arpegplaycounter], notes, div);
-					arpegplaycounter++;
-				}
-				else
-				{
-					arpegplaycounter=0;
-				}
-		}
-			
+			arpeggiator(channel,settings);
+						
 			delayenv = ticks;	// New Timer Value
 			envelopChannel(keys ,channel, settings);
 		}
