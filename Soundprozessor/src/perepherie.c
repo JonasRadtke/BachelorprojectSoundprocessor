@@ -299,10 +299,10 @@ uint8_t readSettings(Settings* settingspointer)
 		{
 			newSettings.Sustain = 0;
 			newSettings.Release = 0;
-			newSettings.burst = 0;
+			//newSettings.burst = 0;
 		}
 	
-		if(newSettings.arpeggio == 1 && (newSettings.Sustain == 1 || newSettings.Release == 1 || newSettings.burst == 1))		//Fall 2: Fall 1 nicht eingetreten und Arpeggio nachher an und anhaltenderton oder halleffekt nachher an --> arpeggio aus 
+		if(newSettings.arpeggio == 1 && (newSettings.Sustain == 1 || newSettings.Release == 1 /* || newSettings.burst == 1*/))		//Fall 2: Fall 1 nicht eingetreten und Arpeggio nachher an und anhaltenderton oder halleffekt nachher an --> arpeggio aus 
 		{
 			newSettings.arpeggio = 0;
 		}

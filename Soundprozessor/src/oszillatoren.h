@@ -54,6 +54,8 @@ typedef struct chan1 {
 	// Envelope
 	uint32_t envelopeVolume;	// Actual Volume
 	uint32_t envelopeStep;
+	uint32_t envelopeStepAttack;
+	
 	int32_t adsrCnt;			// Counter for Attack,Delay,Sustain,Release - in milliseconds, counts to zero
 	
 	int32_t delayTime;		// Length of Delay - in milliseconds
@@ -65,7 +67,11 @@ typedef struct chan1 {
 	int32_t releaseTime;	// Length of Release - in milliseconds
 	
 	int32_t burstTime;
-
+	
+	int32_t attackTime;
+	
+	uint8_t arpegModeActive;
+	int32_t sustainTime;
 	
 	// Waveforms
 	uint32_t dutycycle;		    // Duty Cycle in percent 0-100%
@@ -100,7 +106,7 @@ void timerInit (void);
 void oscillator(chan *);
 void noise(chan [], noiseChan *);
 
-void activateChannel(uint8_t key[],Settings set,chan x[], float note[], uint16_t div[],uint8_t arpegNotes[]);
+void activateChannel(uint8_t key[],Settings set,chan x[], float note[], uint16_t div[],uint8_t arpegNotes[],uint8_t* arpegNoteNumber);
 int8_t _searchFreeChannel(chan x[], uint8_t key);
 void _calculateChannelSettings(chan x[],Settings, uint8_t channelIndex, uint8_t key, float note[], uint16_t div[]);
 void envelopChannel(uint8_t key[] ,chan x[], Settings);

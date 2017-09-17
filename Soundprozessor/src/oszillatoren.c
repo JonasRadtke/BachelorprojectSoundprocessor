@@ -11,9 +11,10 @@ chan channel[8];
 noiseChan singleNoise;
 
 //uint32_t sustainVolume = 0x0000FFFF/2;
-uint32_t delayzeit = 50;  // HIER NUR PROVOSIRSCH
-//uint32_t releasezeit = 33; // HIER NUR PROVOSIRSCH
-uint32_t noisezeit = 11; // HIER NUR PROVOSIRSCH
+uint32_t delayzeit = 10;  //
+uint32_t releasezeit = 15; //STANDARD MINIMUM VALUES
+uint32_t noisezeit = 11; // 
+uint32_t attackzeit = 15; //
 
 
 
@@ -243,7 +244,7 @@ void noise(chan x[], noiseChan *y){
 	
 }
 
-void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_t div[], uint8_t arpegNotes[]){
+void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_t div[], uint8_t arpegNotes[],uint8_t* arpegNoteNumber){
 	uint8_t i = 0;
 	uint8_t keyTemp = 0;
 	uint8_t j = 0;
@@ -251,7 +252,6 @@ void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_
 	int8_t freeChannel = 0;
 	
 	uint8_t arpegcounter=0;
-	static uint8_t arpegplaycounter;
 	
 	// Search for pressed Key
 	for (i = 0; i<6; i++)
@@ -287,9 +287,7 @@ void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_
 					{
 						if(arpegNotes[arpegcounter] != keyNumberTemp)
 						{
-							x[0].oscillator_on=0;
 							sortInArpegNote(arpegNotes,keyNumberTemp,arpegcounter);
-							arpegplaycounter=0;
 						}
 						else{}
 						
@@ -302,20 +300,7 @@ void activateChannel(uint8_t key[],Settings set, chan x[], float note[], uint16_
 		}
 	}
 
-	if(set.arpeggio && x[0].oscillator_on==0)
-	{
-		
-		
-		if(arpegplaycounter<arpegcounter)
-		{
-			_calculateChannelSettings(x,set ,0, arpegNotes[arpegplaycounter], note, div);
-			arpegplaycounter++;
-		}
-		else
-		{
-			arpegplaycounter=0;
-		}
-	}
+	*arpegNoteNumber=arpegcounter;
 
 }
 
@@ -385,35 +370,45 @@ void _calculateChannelSettings(chan x[], Settings set ,uint8_t channelIndex, uin
 		channel[channelIndex].noise_divider = div[15];
 	}
 	
-	channel[channelIndex].envelopeVolume = 0x0000FFFF; // Preset for envelope Volume
+
+	channel[channelIndex].arpegModeActive=set.arpeggio;
 	
-	if(set.arpeggio==0)
+	channel[channelIndex].envelopeVolume = 0; // Preset for envelope Volume
+	
+	if(channel[channelIndex].arpegModeActive)
 	{
-		channel[channelIndex].delayTime = delayzeit;		// HIER NOCH ÄNDERUNG
-		if(set.Release)
-		{
-			channel[channelIndex].releaseTime = 300+set.releaseValue;
-		}
-		else
-		{
-			channel[channelIndex].releaseTime = 50;	
-		}
-		
-		if(set.Sustain)
-		{
-			channel[channelIndex].sustainVol = set.sustainValue*15+15000;
-		}
-		else
-		{
-			channel[channelIndex].sustainVol = 0x0000FFFF/2;
-		}
-		channel[channelIndex].envelopeStep = (channel[channelIndex].envelopeVolume-channel[channelIndex].sustainVol) / channel[channelIndex].delayTime;
-		channel[channelIndex].adsrCnt = channel[channelIndex].burstTime+channel[channelIndex].releaseTime + channel[channelIndex].delayTime; // adsrCnt counts to Zero, Burst -> decay -> release
+		channel[channelIndex].sustainTime = set.arpValue/10 + 20;		//Set Timelength of a single Arpeggio note
 	}
 	else
 	{
-		channel[channelIndex].adsrCnt = set.arpValue/10 + 20;		//Set Timelength oof a single Arpeggio note
+		channel[channelIndex].sustainTime = 0;	//Standard Sustaintime for not-arpeggio
 	}
+		
+	channel[channelIndex].delayTime = delayzeit;
+	
+	if(set.Release && !channel[channelIndex].arpegModeActive)
+	{
+		channel[channelIndex].releaseTime = 300+set.releaseValue;
+	}
+	else
+	{
+		channel[channelIndex].releaseTime = releasezeit;	
+	}
+		
+	if(set.Sustain)
+	{
+		channel[channelIndex].sustainVol = set.sustainValue*15+15000;
+	}
+	else
+	{
+		channel[channelIndex].sustainVol = 0x0000FFFF/2;
+	}
+
+	
+	channel[channelIndex].attackTime = attackzeit;
+	channel[channelIndex].envelopeStepAttack = 0x0000FFFF/channel[channelIndex].attackTime;
+	channel[channelIndex].envelopeStep = (0x0000FFFF-channel[channelIndex].sustainVol) / channel[channelIndex].delayTime;
+	channel[channelIndex].adsrCnt = channel[channelIndex].burstTime + channel[channelIndex].releaseTime + channel[channelIndex].sustainTime + channel[channelIndex].delayTime + channel[channelIndex].attackTime; // adsrCnt counts to Zero, Burst -> decay -> release
 	
 	channel[channelIndex].pushed_key = key;  // Write pushed key in Channel struct
 	channel[channelIndex].oscillator_on = 1;	// OSC on as last command!
@@ -424,43 +419,21 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 	uint8_t keyInByte = 0;
 	uint8_t keyIndex = 0;
 	
-	//Deativate Channel if Arpeggio is active
-	if(set.arpeggio == 1)
-	{
-		for(i=1;i<8;i++)
-		{
-			if (x[i].oscillator_on == 1)	//Deactivate every channel that is not used for Arpeggio
-			{
-				x[i].oscillator_on = 0;
-				x[i].releaseActive = 0;
-				x[i].pushed_key = 0;
-				x[i].waveform = 0;
-				x[i].chan_out = 0;
-			}
-		}
-		
-		if(x[0].adsrCnt<=0) 
-		{
-			x[0].oscillator_on = 0;
-			x[0].releaseActive = 0;
-			x[0].pushed_key = 0;
-			x[0].waveform = 0;
-			x[0].chan_out = 0;
-		}
-		else
-		{
-			x[0].envelopeVolume = x[0].sustainVol;
-			x[0].adsrCnt--;
-			x[0].waveform = set.waveform;
-		}
-		
-	}
-	else	//normal procedure if arpeggio is not active
-	{
-		
+	
 	// Looking for activated Channel
 	for (i = 0; i<8; i++)
 	{
+		if(x[i].arpegModeActive)
+		{
+			if(x[i].adsrCnt <= x[i].releaseTime && (x[i].oscillator_on >= 1))
+			{
+				x[i].releaseActive=1;
+				x[i].envelopeStep = x[i].sustainVol / x[i].releaseTime;
+			}
+		}
+		else
+		{
+		
 		// Calculate Position in Key Array
 		keyIndex = x[i].pushed_key / 8;
 		keyInByte = x[i].pushed_key % 8;
@@ -488,6 +461,7 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 				x[i].releaseActive = 1;
 			}
 		}
+		}
 	}	
 			
 	// Generate ADSR
@@ -497,22 +471,37 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 		if (x[i].oscillator_on >= 1) // If Oscillator is On
 		{
 			// Burst active
-			if (x[i].adsrCnt > (x[i].releaseTime + x[i].delayTime))
+			if (x[i].adsrCnt > (x[i].releaseTime + x[i].sustainTime  + x[i].delayTime + x[i].attackTime))
 			{
 				x[i].adsrCnt--;
 			}
+			//Attack active
+			else if (x[i].adsrCnt > (x[i].releaseTime + x[i].sustainTime + x[i].delayTime))
+			{
+				x[i].envelopeVolume += x[i].envelopeStepAttack;
+				x[i].adsrCnt--;
+			}
 			// Decay active
-			else if (x[i].adsrCnt > (x[i].releaseTime)) // Delayphase
+			else if (x[i].adsrCnt > (x[i].releaseTime + x[i].sustainTime)) // Delayphase
 			{
 				x[i].envelopeVolume -= x[i].envelopeStep;
 				x[i].adsrCnt--;
 				x[i].waveform = set.waveform;
 			}
 			// Sustain active
-			else if ((x[i].adsrCnt <= x[i].releaseTime) & !x[i].releaseActive) // Sustainphase (Constant Volume)
+			else if ((x[i].adsrCnt <= x[i].releaseTime + x[i].sustainTime) & !x[i].releaseActive) // Sustainphase (Constant Volume)
 			{
 				x[i].envelopeVolume = x[i].sustainVol;
-				x[i].adsrCnt = x[i].releaseTime;
+				
+				if(x[i].arpegModeActive)
+				{
+					x[i].adsrCnt--;
+				}
+				else
+				{
+					x[i].adsrCnt = x[i].releaseTime;
+				}
+				
 				x[i].waveform = set.waveform;
 			}
 			// Release active
@@ -533,14 +522,14 @@ void envelopChannel(uint8_t key[] ,chan x[], Settings set){
 		}	
 	}
 	
-	}
-	
 }
 
 void sortInArpegNote(uint8_t arpegNotes[], uint8_t newkey, uint8_t position)
 {
 	uint8_t i=0;
 	uint8_t keytemp1,keytemp2;
+	
+	//sort in new Note or overwrite old one if new Note is higher
 	
 	if(arpegNotes[position]>newkey)
 	{
